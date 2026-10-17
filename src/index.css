@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+/* mapas.json cambia al guardar: Tailwind no debe escanearlo ni recompilar el CSS por eso */
+@source not "../data";
+
+/* Tokens copiados de las variables de Mineswepper.pen */
+@theme {
+  --color-bg: #0a0b0e;
+  --color-surface: #121419;
+  --color-surface-2: #1b1e25;
+  --color-cell-hidden: #21252d;
+  --color-cell-open: #0e1014;
+  --color-line: #1f232a; /* $border */
+  --color-ink: #edeef0; /* $text-primary */
+  --color-ink-2: #8b909a; /* $text-secondary */
+  --color-ink-3: #555a64; /* $text-muted */
+  --color-accent: #f5b83d;
+  --color-accent-soft: #f5b83d29;
+  --color-accent-mid: #f5b83d73;
+  --color-hash: #c4b5fd;
+  --color-danger: #f87171;
+  --color-success: #4ade80;
+  --color-success-soft: #4ade801f;
+  --color-dash-light: #d3d6dc;
+  --color-r-plinko: #f472b6;
+  --color-r-mines: #a5b4fc;
+  --color-r-gachas: #e879f9;
+  --color-r-cartas: #fb8a6e;
+  --color-r-variado: #86efac;
+
+  --font-ui: "Inter Variable", Inter, system-ui, sans-serif;
+  --font-num: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:focus-visible {
+  outline: 2px solid var(--color-accent-mid);
+  outline-offset: 2px;
+}
+
+/* scroll discreto */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-surface-2) transparent;
+}
+
+.overline {
+  font-family: var(--font-num);
+  font-size: 11px;
+  letter-spacing: 1.2px;
+  color: var(--color-ink-3);
+  text-transform: uppercase;
+}

@@ -1,0 +1,5 @@
+node_modules
+dist
+# tus mapas son locales: no se publican
+data/*.json
+!data/.gitkeep
