@@ -102,3 +102,9 @@ Equivalencias: `$text-primary → ink`, `$text-secondary → ink-2`, `$text-mute
 ## Nube (Firebase, gratis)
 Guarda tus mapas en tu cuenta de Google con el mismo Ctrl S. Pasos y comportamiento en [`docs/NUBE_FIREBASE.md`](docs/NUBE_FIREBASE.md).
 Sin las variables `VITE_FIREBASE_*` la app funciona igual que antes (archivo local / navegador) y ni descarga Firebase.
+
+## Versión para teléfono (pantalla vertical)
+Con menos de 768 px de ancho la app usa el diseño móvil de `Mineswepper.pen` ("Editando casilla" y "Mina revelada (recompensa)"):
+tablero en un visor con zoom (botón `150 %`, pellizco con dos dedos, "Ver mapa completo"), números de fila/columna en los bordes,
+minimapa (toca para saltar) y una hoja inferior para editar la casilla con flechas ‹ › para pasar a la anterior/siguiente.
+En pantallas más anchas sigue el diseño de escritorio.

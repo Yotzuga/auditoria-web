@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* pantallas bajas (teléfono con barra del navegador): la hoja de edición se compacta */
+@custom-variant short (@media (max-height: 700px));
+
 /* mapas.json cambia al guardar: Tailwind no debe escanearlo ni recompilar el CSS por eso */
 @source not "../data";
 
@@ -67,4 +70,12 @@ button:focus-visible {
   letter-spacing: 1.2px;
   color: var(--color-ink-3);
   text-transform: uppercase;
+}
+
+/* visor táctil: sin barras de desplazamiento visibles */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }

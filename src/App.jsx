@@ -6,6 +6,8 @@ import NewMapDialog from './components/NewMapDialog'
 import MapsDialog from './components/MapsDialog'
 import FileDialog from './components/FileDialog'
 import CloudDialog from './components/CloudDialog'
+import MobileApp from './components/mobile/MobileApp'
+import { useMedia } from './lib/useMedia'
 import { key, stats } from './lib/cells'
 import { nextMapName, useStore } from './lib/store'
 
@@ -17,6 +19,7 @@ export default function App() {
     state, map, savedAt, dirty, file, cloud, hasData, flush, setCell, createMap, openMap, deleteMap,
     linkNew, linkExisting, reconnect, cloudSignIn, cloudSignOut, cloudUseRemote, cloudKeepLocal,
   } = useStore()
+  const mobile = useMedia('(max-width: 767px)') // pantalla vertical: diseño móvil
   const [sel, setSel] = useState({ r: 0, c: 0 })
   const [dialog, setDialog] = useState(null) // 'new' | 'maps' | 'file' | 'cloud' | null
 
@@ -128,28 +131,50 @@ export default function App() {
 
   return (
     <div className="flex h-full flex-col">
-      <TopBar
-        map={map}
-        savedAt={savedAt}
-        dirty={dirty}
-        file={file}
-        cloud={cloud}
-        onFile={fileAction}
-        onCloud={cloudAction}
-        onSave={fileAction}
-        onMaps={() => setDialog('maps')}
-        onNew={() => setDialog('new')}
-      />
-      <div className="flex min-h-0 flex-1 max-lg:flex-col max-lg:overflow-y-auto">
-        <BoardPanel map={map} sel={safeSel} onSelect={setSel} />
-        <Inspector
+      {mobile ? (
+        <MobileApp
+          map={map}
           sel={safeSel}
+          onSelect={setSel}
           cell={cell}
-          rewardStats={st}
           onSet={set}
-          onErase={() => set(null)}
+          stat={st}
+          savedAt={savedAt}
+          dirty={dirty}
+          file={file}
+          cloud={cloud}
+          onSave={fileAction}
+          onCloud={cloudAction}
+          onFile={() => setDialog('file')}
+          onMaps={() => setDialog('maps')}
+          onNew={() => setDialog('new')}
         />
-      </div>
+      ) : (
+        <>
+        <TopBar
+          map={map}
+          savedAt={savedAt}
+          dirty={dirty}
+          file={file}
+          cloud={cloud}
+          onFile={fileAction}
+          onCloud={cloudAction}
+          onSave={fileAction}
+          onMaps={() => setDialog('maps')}
+          onNew={() => setDialog('new')}
+        />
+        <div className="flex min-h-0 flex-1 max-lg:flex-col max-lg:overflow-y-auto">
+          <BoardPanel map={map} sel={safeSel} onSelect={setSel} />
+          <Inspector
+            sel={safeSel}
+            cell={cell}
+            rewardStats={st}
+            onSet={set}
+            onErase={() => set(null)}
+          />
+        </div>
+        </>
+      )}
 
       {dialog === 'new' && (
         <NewMapDialog
