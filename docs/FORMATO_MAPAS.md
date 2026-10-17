@@ -78,3 +78,6 @@ m = load_map('data/mapas.json', '24')    # uno concreto
 g, R, C = m['g'], m['rows'], m['cols']
 m['known'], m['rewards'], m['reward_counts'], m['total'], m['mines']
 ```
+
+## Copia en la nube (Firebase)
+Si usas la nube, Firestore guarda un documento `mapas/<uid>` con **este mismo JSON** (`version`, `actual`, `mapas`) más un contador `_rev` (revisión, solo para detectar conflictos). `bajar_mapas.py` lo baja a `data/mapas.json` sin el `_rev`.

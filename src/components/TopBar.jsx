@@ -1,4 +1,5 @@
-import { ChevronDown, FolderOpen, Grid3x3, Plus, Save } from 'lucide-react'
+import { missingVars } from '../lib/cloudConfig'
+import { ChevronDown, Cloud, CloudOff, FolderOpen, Grid3x3, Plus, Save } from 'lucide-react'
 
 const btn =
   'flex h-9 shrink-0 items-center gap-2 whitespace-nowrap rounded-[10px] border border-line bg-surface px-3.5 text-[13px] font-medium text-ink hover:bg-surface-2'
@@ -72,7 +73,39 @@ function SaveStatus({ file, savedAt, dirty, onFile }) {
   }
 }
 
-export default function TopBar({ map, savedAt, dirty, file, onFile, onSave, onMaps, onNew }) {
+function CloudPill({ cloud, onCloud }) {
+  if (cloud.status === 'off') {
+    // solo en desarrollo: avisa en vez de quedarse callado cuando faltan las variables VITE_FIREBASE_*
+    return import.meta.env.DEV ? (
+      <span
+        className="hidden font-num text-[11px] text-ink-3 md:inline"
+        title={`Faltan: ${missingVars.join(', ') || '—'}. Crea .env.local y reinicia npm run dev`}
+      >
+        Nube sin configurar ({4 - missingVars.length}/4 variables)
+      </span>
+    ) : null
+  }
+  const pill = 'hidden items-center gap-1.5 rounded-full bg-surface px-2.5 py-[5px] hover:bg-surface-2 md:flex'
+  const v = {
+    checking: { icon: Cloud, color: 'text-ink-3', text: 'Nube…' },
+    'signed-out': { icon: CloudOff, color: 'text-accent', text: 'Iniciar sesión · nube' },
+    ready: { icon: Cloud, color: 'text-success', text: 'Nube' },
+    conflict: { icon: CloudOff, color: 'text-danger', text: 'Nube: conflicto · resolver' },
+    error: { icon: CloudOff, color: 'text-danger', text: 'Nube: error · reintentar' },
+  }[cloud.status]
+  const I = v.icon
+  return (
+    <button type="button" onClick={onCloud} className={pill} title={cloud.email || cloud.message}>
+      <I size={12} className={v.color} />
+      <span className={`font-num text-[11px] ${v.color}`}>{v.text}</span>
+    </button>
+  )
+}
+
+export default function TopBar({ map, savedAt, dirty, file, cloud, onFile, onCloud, onSave, onMaps, onNew }) {
+  // con la nube conectada, no hace falta vincular un archivo: el estado de guardado ya es el de la nube
+  const fileView =
+    file.status === 'none' && ['ready', 'conflict', 'error'].includes(cloud.status) ? { ...file, status: 'ready', name: 'Nube' } : file
   return (
     <header className="flex h-16 shrink-0 items-center justify-between gap-4 border-b border-line px-7">
       <div className="flex min-w-0 shrink items-center gap-3">
@@ -92,7 +125,8 @@ export default function TopBar({ map, savedAt, dirty, file, onFile, onSave, onMa
           </span>
           <ChevronDown size={14} className="text-ink-2" />
         </button>
-        <SaveStatus file={file} savedAt={savedAt} dirty={dirty} onFile={onFile} />
+        <SaveStatus file={fileView} savedAt={savedAt} dirty={dirty} onFile={onFile} />
+        <CloudPill cloud={cloud} onCloud={onCloud} />
       </div>
 
       <div className="flex items-center gap-2">

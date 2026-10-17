@@ -98,3 +98,7 @@ Equivalencias: `$text-primary → ink`, `$text-secondary → ink-2`, `$text-mute
 3. Cada `git push` a `main` corre `.github/workflows/deploy.yml` (tests + build) y publica en `https://TU-USUARIO.github.io/NOMBRE-DEL-REPO/`.
 
 `data/*.json` está en `.gitignore`: tus mapas no se suben. En la página publicada hay que vincular `mapas.json` una vez (la dirección web cambia respecto a `localhost`).
+
+## Nube (Firebase, gratis)
+Guarda tus mapas en tu cuenta de Google con el mismo Ctrl S. Pasos y comportamiento en [`docs/NUBE_FIREBASE.md`](docs/NUBE_FIREBASE.md).
+Sin las variables `VITE_FIREBASE_*` la app funciona igual que antes (archivo local / navegador) y ni descarga Firebase.

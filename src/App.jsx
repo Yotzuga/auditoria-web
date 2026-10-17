@@ -5,6 +5,7 @@ import Inspector from './components/Inspector'
 import NewMapDialog from './components/NewMapDialog'
 import MapsDialog from './components/MapsDialog'
 import FileDialog from './components/FileDialog'
+import CloudDialog from './components/CloudDialog'
 import { key, stats } from './lib/cells'
 import { nextMapName, useStore } from './lib/store'
 
@@ -13,11 +14,11 @@ const NUMPAD = /^Numpad([1-8])$/
 
 export default function App() {
   const {
-    state, map, savedAt, dirty, file, hasData, flush, setCell, createMap, openMap, deleteMap,
-    linkNew, linkExisting, reconnect,
+    state, map, savedAt, dirty, file, cloud, hasData, flush, setCell, createMap, openMap, deleteMap,
+    linkNew, linkExisting, reconnect, cloudSignIn, cloudSignOut, cloudUseRemote, cloudKeepLocal,
   } = useStore()
   const [sel, setSel] = useState({ r: 0, c: 0 })
-  const [dialog, setDialog] = useState(null) // 'new' | 'maps' | 'file' | null
+  const [dialog, setDialog] = useState(null) // 'new' | 'maps' | 'file' | 'cloud' | null
 
   // mantener la selección dentro del tablero al cambiar de mapa
   const safeSel = { r: Math.min(sel.r, map.rows - 1), c: Math.min(sel.c, map.cols - 1) }
@@ -32,11 +33,22 @@ export default function App() {
   // acción de la pastilla de estado / Ctrl S
   const fileAction = useCallback(() => {
     if (file.status === 'needs-permission') reconnect()
-    else if (file.status === 'none' || file.status === 'invalid') {
+    else if ((file.status === 'none' || file.status === 'invalid') && cloud.status !== 'ready') {
       flush() // al menos en el navegador
-      setDialog('file')
+      setDialog(cloud.status === 'off' ? 'file' : 'cloud')
     } else flush()
-  }, [file.status, reconnect, flush])
+  }, [file.status, cloud.status, reconnect, flush])
+
+  // un conflicto con la nube se resuelve en cuanto aparece
+  useEffect(() => {
+    if (cloud.status === 'conflict') setDialog('cloud')
+  }, [cloud.status])
+
+  // la pastilla de la nube: errores se reintentan guardando; el resto abre el panel
+  const cloudAction = useCallback(() => {
+    if (cloud.status === 'error') flush()
+    else setDialog('cloud')
+  }, [cloud.status, flush])
 
   useEffect(() => {
     const onKey = (e) => {
@@ -121,7 +133,9 @@ export default function App() {
         savedAt={savedAt}
         dirty={dirty}
         file={file}
+        cloud={cloud}
         onFile={fileAction}
+        onCloud={cloudAction}
         onSave={fileAction}
         onMaps={() => setDialog('maps')}
         onNew={() => setDialog('new')}
@@ -148,6 +162,18 @@ export default function App() {
             setSel({ r: 0, c: 0 })
             setDialog(null)
           }}
+        />
+      )}
+      {dialog === 'cloud' && (
+        <CloudDialog
+          cloud={cloud}
+          onSignIn={cloudSignIn}
+          onSignOut={cloudSignOut}
+          onSave={flush}
+          onUseRemote={cloudUseRemote}
+          onKeepLocal={cloudKeepLocal}
+          onFile={() => setDialog('file')}
+          onClose={() => setDialog(null)}
         />
       )}
       {dialog === 'file' && (
