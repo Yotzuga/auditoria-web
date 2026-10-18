@@ -2,6 +2,7 @@ import { Eraser, Sparkles } from 'lucide-react'
 import CellGlyph, { cellBg } from './CellGlyph'
 import { NUM_COLORS, describe } from '../lib/cells'
 import { REWARDS, REWARD_BY_ID } from '../lib/rewards'
+import Avisos from './Avisos'
 
 const sqBtn =
   'flex size-[34px] items-center justify-center rounded-[9px] bg-surface-2 text-ink-2 hover:text-ink'
@@ -155,7 +156,7 @@ function Rewards({ counts, total, delta }) {
   )
 }
 
-export default function Inspector({ sel, cell, rewardStats, onSet, onErase }) {
+export default function Inspector({ sel, cell, rewardStats, onSet, onErase, avisos = [], onGo, onFix, onAllAvisos }) {
   const t = cell?.t
   const reward = cell?.t === 'X' && cell.reward ? REWARD_BY_ID[cell.reward] : null
   const state = describe(cell) + (reward ? ` · ${reward.name}` : '')
@@ -185,6 +186,8 @@ export default function Inspector({ sel, cell, rewardStats, onSet, onErase }) {
             </button>
           </div>
         </div>
+
+        <Avisos items={avisos} sel={sel} onGo={onGo} onFix={onFix} onAll={onAllAvisos} />
 
         <div className="flex gap-2">
           <Opt sample={{ t: 'x' }} label="Identificada" hotkey="X" active={t === 'x'} onClick={() => onSet({ t: 'x' })} title="Mina identificada, sin revelar" />

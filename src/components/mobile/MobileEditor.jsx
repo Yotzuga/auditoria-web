@@ -2,6 +2,7 @@ import { Eraser, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react'
 import CellGlyph, { cellBg } from '../CellGlyph'
 import { NUM_COLORS, describe } from '../../lib/cells'
 import { REWARDS, REWARD_BY_ID } from '../../lib/rewards'
+import Avisos from '../Avisos'
 
 const sq = 'flex size-9 items-center justify-center rounded-[10px] bg-surface-2 text-ink-2 active:brightness-125'
 
@@ -84,7 +85,7 @@ function RewardPicker({ cell, onPick }) {
 }
 
 /** Hoja inferior para editar la casilla seleccionada (diseño "Editando casilla"). */
-export default function MobileEditor({ sel, cell, onSet, onErase, onPrev, onNext }) {
+export default function MobileEditor({ sel, cell, onSet, onErase, onPrev, onNext, avisos = [], onGo, onFix, onAll }) {
   const t = cell?.t
   const reward = t === 'X' && cell.reward ? REWARD_BY_ID[cell.reward] : null
   const needsReward = t === 'X' && !reward // el selector solo aparece si esta mina aún no tiene recompensa
@@ -132,6 +133,8 @@ export default function MobileEditor({ sel, cell, onSet, onErase, onPrev, onNext
           </button>
         </div>
       </div>
+
+      <Avisos items={avisos} sel={sel} onGo={onGo} onFix={onFix} onAll={onAll} />
 
       <div className="flex gap-1.5">
         <Opt sample={{ t: 'x' }} label="Identificada" active={t === 'x'} onClick={() => onSet({ t: 'x' })} />

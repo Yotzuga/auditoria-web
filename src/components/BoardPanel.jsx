@@ -11,7 +11,7 @@ const ZOOMS = [40, 50, 60, 70, 80, 90, 100, 110, 125, 150, 175, 200]
 const zbtn = 'flex size-7 items-center justify-center rounded-[7px] text-ink-2 hover:bg-surface-2 hover:text-ink'
 
 // Una casilla solo se vuelve a dibujar si cambia ella misma, su tamaño o si se (de)selecciona.
-const Cell = memo(function Cell({ cell, r, c, size, zoom, on, onSelect }) {
+const Cell = memo(function Cell({ cell, r, c, size, zoom, on, warn, onSelect }) {
   return (
     <button
       type="button"
@@ -24,11 +24,12 @@ const Cell = memo(function Cell({ cell, r, c, size, zoom, on, onSelect }) {
         height: size,
         ...(on ? { boxShadow: '0 0 12px #F5B83DAA' } : null),
       }}
-      className={`flex shrink-0 items-center justify-center rounded-md ${cellBg(cell)} ${
+      className={`relative flex shrink-0 items-center justify-center rounded-md ${cellBg(cell)} ${
         on ? 'border-2 border-accent' : 'hover:brightness-125'
       }`}
     >
       <CellGlyph cell={cell} fs={(15 * zoom) / 100} />
+      {warn && <span className="pointer-events-none absolute right-[2px] top-[2px] size-[6px] rounded-full bg-danger" />}
     </button>
   )
 })
@@ -50,7 +51,7 @@ function Stat({ label, glyph, value, suffix }) {
   )
 }
 
-export default function BoardPanel({ map, sel, onSelect }) {
+export default function BoardPanel({ map, sel, onSelect, bad }) {
   const { x, X, total } = useMemo(() => stats(map), [map])
   const [zoom, setZoom] = useState(100)
   const zoneRef = useRef(null)
@@ -137,6 +138,7 @@ export default function BoardPanel({ map, sel, onSelect }) {
           size={size}
           zoom={zoom}
           on={sel.r === r && sel.c === c}
+          warn={bad ? bad.has(`${r},${c}`) : false}
           onSelect={onSelect}
         />,
       )

@@ -1,4 +1,4 @@
-import { Download, FolderOpen, Plus, Save } from 'lucide-react'
+import { AlertTriangle, Download, FolderOpen, Plus, Save } from 'lucide-react'
 import MobileBoard from './MobileBoard'
 import MobileEditor from './MobileEditor'
 
@@ -46,7 +46,7 @@ const round = 'relative flex size-[34px] shrink-0 items-center justify-center ro
 /** Pantalla vertical (< 768 px): diseños "Editando casilla" y "Mina revelada (recompensa)". */
 export default function MobileApp({
   map, sel, onSelect, cell, onSet, stat, savedAt, dirty, file, cloud,
-  onSave, onExport, onCloud, onFile, onMaps, onNew,
+  onSave, onExport, avisos, cerca, onAvisos, onFix, onCloud, onFile, onMaps, onNew,
 }) {
   const s = statusOf({ dirty, savedAt, file, cloud })
   const [dot, txt] = TONE[s.tone]
@@ -71,12 +71,32 @@ export default function MobileApp({
             >
               <span className={`size-1.5 rounded-full ${dot}`} />
               <span className={`whitespace-nowrap font-num text-[11px] ${txt}`} style={{ letterSpacing: '1.2px' }}>
-                {s.text}
+                {s.text.endsWith(' · NUBE') ? (
+                  <>
+                    {s.text.slice(0, -7)}
+                    <span className="max-[379px]:hidden"> · NUBE</span>
+                  </>
+                ) : (
+                  s.text
+                )}
               </span>
             </Label>
-            <h1 className="truncate text-[28px] font-semibold leading-tight short:text-2xl" style={{ letterSpacing: '-0.6px' }}>
-              {map.name}
-            </h1>
+            <div className="flex min-w-0 items-center gap-2.5">
+              <h1 className="truncate text-[28px] font-semibold leading-tight short:text-2xl" style={{ letterSpacing: '-0.6px' }}>
+                {map.name}
+              </h1>
+              {avisos.count > 0 && (
+                <button
+                  type="button"
+                  onClick={onAvisos}
+                  aria-label={`${avisos.count} ${avisos.count === 1 ? 'aviso' : 'avisos'} de reglas`}
+                  className="flex shrink-0 items-center gap-1 rounded-full bg-danger/15 px-2 py-[3px]"
+                >
+                  <AlertTriangle size={12} className="text-danger" />
+                  <span className="font-num text-xs font-medium text-danger">{avisos.count}</span>
+                </button>
+              )}
+            </div>
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
             <button type="button" className={round} onClick={onMaps} aria-label="Mis mapas">
@@ -131,7 +151,7 @@ export default function MobileApp({
       </div>
 
       <div className="flex min-h-[210px] flex-1 flex-col px-4 pb-4">
-        <MobileBoard map={map} sel={sel} onSelect={onSelect} />
+        <MobileBoard map={map} sel={sel} onSelect={onSelect} bad={avisos.cells} />
       </div>
 
       <MobileEditor
@@ -141,6 +161,10 @@ export default function MobileApp({
         onErase={() => onSet(null)}
         onPrev={() => move(-1)}
         onNext={() => move(1)}
+        avisos={cerca}
+        onGo={onSelect}
+        onFix={onFix}
+        onAll={onAvisos}
       />
     </div>
   )

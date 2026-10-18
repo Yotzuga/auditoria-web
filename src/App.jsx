@@ -6,11 +6,13 @@ import NewMapDialog from './components/NewMapDialog'
 import MapsDialog from './components/MapsDialog'
 import FileDialog from './components/FileDialog'
 import CloudDialog from './components/CloudDialog'
+import AvisosDialog from './components/AvisosDialog'
 import MobileApp from './components/mobile/MobileApp'
 import { useMedia } from './lib/useMedia'
 import { key, stats } from './lib/cells'
 import { nextMapName, useStore } from './lib/store'
 import { downloadText } from './lib/exportFile'
+import { cercanas, revisar } from './lib/reglas'
 
 const DIGIT = /^Digit([0-8])$/
 const NUMPAD = /^Numpad([1-8])$/
@@ -28,6 +30,9 @@ export default function App() {
   const safeSel = { r: Math.min(sel.r, map.rows - 1), c: Math.min(sel.c, map.cols - 1) }
   const cell = map.cells[key(safeSel.r, safeSel.c)]
   const st = useMemo(() => stats(map), [map])
+  // reglas del juego (mismas que issues.py): avisos del mapa y los que tocan la casilla elegida
+  const rev = useMemo(() => revisar(map), [map])
+  const cerca = useMemo(() => cercanas(rev, { r: safeSel.r, c: safeSel.c }), [rev, safeSel.r, safeSel.c])
 
   const set = useCallback(
     (next) => setCell(safeSel.r, safeSel.c, next),
@@ -42,6 +47,8 @@ export default function App() {
       setDialog(cloud.status === 'off' ? 'file' : 'cloud')
     } else flush()
   }, [file.status, cloud.status, reconnect, flush])
+
+  const fixIssue = useCallback((it) => setCell(it.r, it.c, it.fix), [setCell])
 
   // descarga mapas.json con todos los mapas tal como están en pantalla (incluye cambios sin guardar)
   const exportJson = useCallback(() => downloadText(exportText(), 'mapas.json'), [exportText])
@@ -149,6 +156,10 @@ export default function App() {
           cloud={cloud}
           onSave={fileAction}
           onExport={exportJson}
+          avisos={rev}
+          cerca={cerca}
+          onAvisos={() => setDialog('avisos')}
+          onFix={fixIssue}
           onCloud={cloudAction}
           onFile={() => setDialog('file')}
           onMaps={() => setDialog('maps')}
@@ -166,17 +177,23 @@ export default function App() {
           onCloud={cloudAction}
           onSave={fileAction}
           onExport={exportJson}
+          avisos={rev.count}
+          onAvisos={() => setDialog('avisos')}
           onMaps={() => setDialog('maps')}
           onNew={() => setDialog('new')}
         />
         <div className="flex min-h-0 flex-1 max-lg:flex-col max-lg:overflow-y-auto">
-          <BoardPanel map={map} sel={safeSel} onSelect={setSel} />
+          <BoardPanel map={map} sel={safeSel} onSelect={setSel} bad={rev.cells} />
           <Inspector
             sel={safeSel}
             cell={cell}
             rewardStats={st}
             onSet={set}
             onErase={() => set(null)}
+            avisos={cerca}
+            onGo={setSel}
+            onFix={fixIssue}
+            onAllAvisos={() => setDialog('avisos')}
           />
         </div>
         </>
@@ -193,6 +210,17 @@ export default function App() {
             setSel({ r: 0, c: 0 })
             setDialog(null)
           }}
+        />
+      )}
+      {dialog === 'avisos' && (
+        <AvisosDialog
+          rev={rev}
+          onClose={() => setDialog(null)}
+          onGo={(rc) => {
+            setSel(rc)
+            setDialog(null)
+          }}
+          onFix={fixIssue}
         />
       )}
       {dialog === 'cloud' && (

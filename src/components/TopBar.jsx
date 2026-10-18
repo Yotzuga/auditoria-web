@@ -1,5 +1,5 @@
 import { missingVars } from '../lib/cloudConfig'
-import { ChevronDown, Cloud, CloudOff, Download, FolderOpen, Grid3x3, Plus, Save } from 'lucide-react'
+import { AlertTriangle, ChevronDown, Cloud, CloudOff, Download, FolderOpen, Grid3x3, Plus, Save } from 'lucide-react'
 
 const btn =
   'flex h-9 shrink-0 items-center gap-2 whitespace-nowrap rounded-[10px] border border-line bg-surface px-3.5 text-[13px] font-medium text-ink hover:bg-surface-2'
@@ -102,7 +102,7 @@ function CloudPill({ cloud, onCloud }) {
   )
 }
 
-export default function TopBar({ map, savedAt, dirty, file, cloud, onFile, onCloud, onSave, onExport, onMaps, onNew }) {
+export default function TopBar({ map, savedAt, dirty, file, cloud, onFile, onCloud, onSave, onExport, avisos = 0, onAvisos, onMaps, onNew }) {
   // con la nube conectada, no hace falta vincular un archivo: el estado de guardado ya es el de la nube
   const fileView =
     file.status === 'none' && ['ready', 'conflict', 'error'].includes(cloud.status) ? { ...file, status: 'ready', name: 'Nube' } : file
@@ -127,6 +127,19 @@ export default function TopBar({ map, savedAt, dirty, file, cloud, onFile, onClo
         </button>
         <SaveStatus file={fileView} savedAt={savedAt} dirty={dirty} onFile={onFile} />
         <CloudPill cloud={cloud} onCloud={onCloud} />
+        {avisos > 0 && (
+          <button
+            type="button"
+            onClick={onAvisos}
+            title="Revisión del tablero según las reglas del juego"
+            className="flex items-center gap-1.5 rounded-full bg-danger/15 px-2.5 py-[5px] hover:brightness-125"
+          >
+            <AlertTriangle size={12} className="text-danger" />
+            <span className="font-num text-[11px] text-danger">
+              {avisos} {avisos === 1 ? 'aviso' : 'avisos'}
+            </span>
+          </button>
+        )}
       </div>
 
       <div className="flex items-center gap-2">

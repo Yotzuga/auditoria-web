@@ -13,7 +13,7 @@ const ZOOM_STEPS = [100, 150, 200, 300]
 const MAX_ZOOM = 400
 
 // Una casilla solo se redibuja si cambia ella misma, su tamaño o si se (de)selecciona.
-const Cell = memo(function Cell({ cell, r, c, size, on }) {
+const Cell = memo(function Cell({ cell, r, c, size, on, warn }) {
   return (
     <div
       data-rc={`${r},${c}`}
@@ -23,9 +23,15 @@ const Cell = memo(function Cell({ cell, r, c, size, on }) {
         borderRadius: Math.max(3, size * 0.21),
         ...(on ? { boxShadow: '0 0 10px #F5B83DAA' } : null),
       }}
-      className={`flex shrink-0 items-center justify-center ${cellBg(cell)} ${on ? 'border-2 border-accent' : ''}`}
+      className={`relative flex shrink-0 items-center justify-center ${cellBg(cell)} ${on ? 'border-2 border-accent' : ''}`}
     >
       <CellGlyph cell={cell} fs={size * 0.7} />
+      {warn && (
+        <span
+          className="pointer-events-none absolute rounded-full bg-danger"
+          style={{ width: Math.max(4, Math.round(size * 0.28)), height: Math.max(4, Math.round(size * 0.28)), right: 1, top: 1 }}
+        />
+      )}
     </div>
   )
 })
@@ -37,7 +43,7 @@ const pill = 'pointer-events-none absolute flex h-[15px] min-w-[22px] items-cent
  * números de fila/columna en los bordes, minimapa y desplazamiento táctil.
  * 100 % = el mapa completo cabe a lo ancho (como en el diseño "Mapa").
  */
-export default function MobileBoard({ map, sel, onSelect }) {
+export default function MobileBoard({ map, sel, onSelect, bad }) {
   const hostRef = useRef(null)
   const scrollRef = useRef(null)
   const [box, setBox] = useState({ w: 358, h: 338 })
@@ -226,7 +232,7 @@ export default function MobileBoard({ map, sel, onSelect }) {
     const cells = []
     for (let c = 0; c < map.cols; c++) {
       cells.push(
-        <Cell key={c} cell={map.cells[`${r},${c}`]} r={r} c={c} size={L.size} on={sel.r === r && sel.c === c} />,
+        <Cell key={c} cell={map.cells[`${r},${c}`]} r={r} c={c} size={L.size} on={sel.r === r && sel.c === c} warn={bad ? bad.has(`${r},${c}`) : false} />,
       )
     }
     rows.push(
