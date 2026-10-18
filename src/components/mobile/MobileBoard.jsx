@@ -2,7 +2,13 @@ import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from 
 import { Minimize2 } from 'lucide-react'
 import CellGlyph, { cellBg } from '../CellGlyph'
 
-const PAD = 10
+// Márgenes dentro del área desplazable. Arriba/izquierda se reserva la banda de las reglas y abajo la de
+// los controles (zoom y minimapa), así las casillas de los bordes pueden quedar libres y tocables.
+const PAD_T = 22
+const PAD_L = 26
+const PAD_R = 10
+const PAD_B = 72
+const RULER_IDLE = 1400 // ms sin tocar ni desplazar para que las reglas reaparezcan
 const ZOOM_STEPS = [100, 150, 200, 300]
 const MAX_ZOOM = 400
 
@@ -43,11 +49,11 @@ export default function MobileBoard({ map, sel, onSelect }) {
 
   const calc = useCallback(
     (z) => {
-      const unit = Math.max(10, Math.floor((box.w - PAD * 2 - (map.cols - 1) * 2) / map.cols))
+      const unit = Math.max(10, Math.floor((box.w - PAD_L - PAD_R - (map.cols - 1) * 2) / map.cols))
       const size = Math.max(6, Math.round((unit * z) / 100))
       const gap = z >= 130 ? 3 : 2
-      const contentW = map.cols * size + (map.cols - 1) * gap + PAD * 2
-      const contentH = map.rows * size + (map.rows - 1) * gap + PAD * 2
+      const contentW = map.cols * size + (map.cols - 1) * gap + PAD_L + PAD_R
+      const contentH = map.rows * size + (map.rows - 1) * gap + PAD_T + PAD_B
       const innerW = Math.max(contentW, box.w)
       const innerH = Math.max(contentH, box.h)
       return { size, gap, contentW, contentH, innerW, innerH, offX: (innerW - contentW) / 2, offY: (innerH - contentH) / 2 }
@@ -110,8 +116,21 @@ export default function MobileBoard({ map, sel, onSelect }) {
     const el = scrollRef.current
     setScroll({ x: el.scrollLeft, y: el.scrollTop })
   }
+  // Reglas visibles solo en reposo: desaparecen al tocar o desplazar y vuelven tras RULER_IDLE ms.
+  const [rulers, setRulers] = useState(true)
+  const touching = useRef(false)
+  const rulerTimer = useRef(0)
+  const hush = useCallback(() => {
+    setRulers(false)
+    clearTimeout(rulerTimer.current)
+    rulerTimer.current = setTimeout(() => {
+      if (!touching.current) setRulers(true)
+    }, RULER_IDLE)
+  }, [])
+  useEffect(() => () => clearTimeout(rulerTimer.current), [])
   const raf = useRef(0)
   const handleScroll = () => {
+    hush()
     cancelAnimationFrame(raf.current)
     raf.current = requestAnimationFrame(() => onScroll.current())
   }
@@ -150,12 +169,12 @@ export default function MobileBoard({ map, sel, onSelect }) {
     const el = scrollRef.current
     if (!el) return
     const b = calc(zoomRef.current)
-    const x0 = b.offX + PAD + sel.c * (b.size + b.gap)
-    const y0 = b.offY + PAD + sel.r * (b.size + b.gap)
+    const x0 = b.offX + PAD_L + sel.c * (b.size + b.gap)
+    const y0 = b.offY + PAD_T + sel.r * (b.size + b.gap)
     const m = 30
     if (x0 - m < el.scrollLeft) el.scrollLeft = x0 - m
     else if (x0 + b.size + m > el.scrollLeft + box.w) el.scrollLeft = x0 + b.size + m - box.w
-    const mb = 52 // deja libre la zona del zoom y el minimapa
+    const mb = 76 // deja libre la zona del zoom y el minimapa
     if (y0 - m < el.scrollTop) el.scrollTop = y0 - m
     else if (y0 + b.size + mb > el.scrollTop + box.h) el.scrollTop = y0 + b.size + mb - box.h
   }, [sel.r, sel.c, box.w, box.h]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -168,8 +187,8 @@ export default function MobileBoard({ map, sel, onSelect }) {
   }
 
   // ---- números en los bordes: múltiplos de 5 y la fila/columna seleccionada ----
-  const colX = (c) => L.offX + PAD + c * (L.size + L.gap) + L.size / 2 - scroll.x
-  const rowY = (r) => L.offY + PAD + r * (L.size + L.gap) + L.size / 2 - scroll.y
+  const colX = (c) => L.offX + PAD_L + c * (L.size + L.gap) + L.size / 2 - scroll.x
+  const rowY = (r) => L.offY + PAD_T + r * (L.size + L.gap) + L.size / 2 - scroll.y
   const selX = colX(sel.c)
   const selY = rowY(sel.r)
   const colPills = []
@@ -218,7 +237,22 @@ export default function MobileBoard({ map, sel, onSelect }) {
   }
 
   return (
-    <div ref={hostRef} className="relative min-h-0 flex-1 overflow-hidden rounded-2xl border border-line bg-surface">
+    <div
+      ref={hostRef}
+      onPointerDown={() => {
+        touching.current = true
+        hush()
+      }}
+      onPointerUp={() => {
+        touching.current = false
+        hush()
+      }}
+      onPointerCancel={() => {
+        touching.current = false
+        hush()
+      }}
+      className="relative min-h-0 flex-1 overflow-hidden rounded-2xl border border-line bg-surface"
+    >
       <div
         ref={scrollRef}
         onScroll={handleScroll}
@@ -227,14 +261,14 @@ export default function MobileBoard({ map, sel, onSelect }) {
         style={{ touchAction: 'pan-x pan-y' }}
       >
         <div style={{ width: L.innerW, height: L.innerH }} className="flex items-center justify-center">
-          <div className="flex flex-col" style={{ gap: L.gap, padding: PAD }} data-grid>
+          <div className="flex flex-col" style={{ gap: L.gap, padding: `${PAD_T}px ${PAD_R}px ${PAD_B}px ${PAD_L}px` }} data-grid>
             {rows}
           </div>
         </div>
       </div>
 
       {/* números de columna y fila */}
-      <div className="pointer-events-none absolute inset-0">
+      <div className={`pointer-events-none absolute inset-0 transition-opacity duration-150 ${rulers ? 'opacity-100' : 'opacity-0'}`}>
         {colPills.map(([k, x]) => (
           <span key={'c' + k} className={`${pill} bg-[#0A0B0EDD] font-medium text-ink-2`} style={{ left: x - 11, top: 4 }}>
             {k}

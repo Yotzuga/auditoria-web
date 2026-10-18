@@ -10,13 +10,14 @@ import MobileApp from './components/mobile/MobileApp'
 import { useMedia } from './lib/useMedia'
 import { key, stats } from './lib/cells'
 import { nextMapName, useStore } from './lib/store'
+import { downloadText } from './lib/exportFile'
 
 const DIGIT = /^Digit([0-8])$/
 const NUMPAD = /^Numpad([1-8])$/
 
 export default function App() {
   const {
-    state, map, savedAt, dirty, file, cloud, hasData, flush, setCell, createMap, openMap, deleteMap,
+    state, map, savedAt, dirty, file, cloud, hasData, flush, exportText, setCell, createMap, openMap, deleteMap,
     linkNew, linkExisting, reconnect, cloudSignIn, cloudSignOut, cloudUseRemote, cloudKeepLocal,
   } = useStore()
   const mobile = useMedia('(max-width: 767px)') // pantalla vertical: diseño móvil
@@ -41,6 +42,9 @@ export default function App() {
       setDialog(cloud.status === 'off' ? 'file' : 'cloud')
     } else flush()
   }, [file.status, cloud.status, reconnect, flush])
+
+  // descarga mapas.json con todos los mapas tal como están en pantalla (incluye cambios sin guardar)
+  const exportJson = useCallback(() => downloadText(exportText(), 'mapas.json'), [exportText])
 
   // un conflicto con la nube se resuelve en cuanto aparece
   useEffect(() => {
@@ -144,6 +148,7 @@ export default function App() {
           file={file}
           cloud={cloud}
           onSave={fileAction}
+          onExport={exportJson}
           onCloud={cloudAction}
           onFile={() => setDialog('file')}
           onMaps={() => setDialog('maps')}
@@ -160,6 +165,7 @@ export default function App() {
           onFile={fileAction}
           onCloud={cloudAction}
           onSave={fileAction}
+          onExport={exportJson}
           onMaps={() => setDialog('maps')}
           onNew={() => setDialog('new')}
         />

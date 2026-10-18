@@ -1,5 +1,5 @@
 import { missingVars } from '../lib/cloudConfig'
-import { ChevronDown, Cloud, CloudOff, FolderOpen, Grid3x3, Plus, Save } from 'lucide-react'
+import { ChevronDown, Cloud, CloudOff, Download, FolderOpen, Grid3x3, Plus, Save } from 'lucide-react'
 
 const btn =
   'flex h-9 shrink-0 items-center gap-2 whitespace-nowrap rounded-[10px] border border-line bg-surface px-3.5 text-[13px] font-medium text-ink hover:bg-surface-2'
@@ -102,7 +102,7 @@ function CloudPill({ cloud, onCloud }) {
   )
 }
 
-export default function TopBar({ map, savedAt, dirty, file, cloud, onFile, onCloud, onSave, onMaps, onNew }) {
+export default function TopBar({ map, savedAt, dirty, file, cloud, onFile, onCloud, onSave, onExport, onMaps, onNew }) {
   // con la nube conectada, no hace falta vincular un archivo: el estado de guardado ya es el de la nube
   const fileView =
     file.status === 'none' && ['ready', 'conflict', 'error'].includes(cloud.status) ? { ...file, status: 'ready', name: 'Nube' } : file
@@ -138,6 +138,10 @@ export default function TopBar({ map, savedAt, dirty, file, cloud, onFile, onClo
           <Save size={15} />
           <span className="hidden md:inline">Guardar</span>
           <span className="hidden font-num text-[11px] font-normal text-ink-3 lg:inline">Ctrl S</span>
+        </button>
+        <button type="button" className={btn} onClick={onExport} title="Descargar mapas.json con todos los mapas">
+          <Download size={15} />
+          <span className="hidden md:inline">Exportar</span>
         </button>
         <button type="button" className={btn} onClick={onNew}>
           <Plus size={15} />

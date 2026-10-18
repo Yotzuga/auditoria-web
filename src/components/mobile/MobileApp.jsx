@@ -1,4 +1,4 @@
-import { FolderOpen, Plus, Save } from 'lucide-react'
+import { Download, FolderOpen, Plus, Save } from 'lucide-react'
 import MobileBoard from './MobileBoard'
 import MobileEditor from './MobileEditor'
 
@@ -46,7 +46,7 @@ const round = 'relative flex size-[34px] shrink-0 items-center justify-center ro
 /** Pantalla vertical (< 768 px): diseños "Editando casilla" y "Mina revelada (recompensa)". */
 export default function MobileApp({
   map, sel, onSelect, cell, onSet, stat, savedAt, dirty, file, cloud,
-  onSave, onCloud, onFile, onMaps, onNew,
+  onSave, onExport, onCloud, onFile, onMaps, onNew,
 }) {
   const s = statusOf({ dirty, savedAt, file, cloud })
   const [dot, txt] = TONE[s.tone]
@@ -86,14 +86,17 @@ export default function MobileApp({
               <Save size={16} className={dirty ? 'text-accent' : 'text-ink'} />
               {dirty && <span className="absolute right-0 top-0 size-2 rounded-full border border-bg bg-accent" />}
             </button>
+            <button type="button" className={round} onClick={onExport} aria-label="Exportar JSON">
+              <Download size={16} />
+            </button>
             <button
               type="button"
               onClick={onNew}
               aria-label="Nuevo mapa"
-              className="flex items-center gap-1.5 whitespace-nowrap rounded-full border border-line bg-surface px-3.5 py-[9px] text-[13px] font-medium max-[379px]:size-[34px] max-[379px]:justify-center max-[379px]:p-0"
+              className="flex items-center gap-1.5 whitespace-nowrap rounded-full border border-line bg-surface px-3.5 py-[9px] text-[13px] font-medium max-[429px]:size-[34px] max-[429px]:justify-center max-[429px]:p-0"
             >
               <Plus size={15} />
-              <span className="max-[379px]:hidden">Nuevo mapa</span>
+              <span className="max-[429px]:hidden">Nuevo mapa</span>
             </button>
           </div>
         </div>

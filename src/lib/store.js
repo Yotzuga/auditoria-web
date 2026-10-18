@@ -15,6 +15,7 @@ import { cloudConfigured, loadCloud } from './cloudConfig'
 
 const LS_KEY = 'auditoria.v2' // texto JSON con el mismo formato que mapas.json (respaldo)
 const LS_REV = 'auditoria.cloudrev' // {uid, rev}: última revisión de la nube que este navegador conoce
+const LS_UNSYNCED = 'auditoria.unsynced' // '1' = lo guardado en este navegador aún no está confirmado en la nube
 const LS_KEY_V1 = 'auditoria.v1' // formato anterior (ids con UUID); solo se lee para migrar
 
 function newMap(id, name, cols, rows, mines) {
@@ -77,6 +78,23 @@ function saveKnownRev(uid, rev) {
     /* ignorar */
   }
 }
+// Marca persistente (sobrevive a recargar): hay datos guardados aquí que la nube todavía no tiene.
+// Sin ella, al reabrir la app la nube "ganaba" y borraba esos cambios sin avisar.
+function readUnsynced() {
+  try {
+    return localStorage.getItem(LS_UNSYNCED) === '1'
+  } catch {
+    return false
+  }
+}
+function setUnsynced(on) {
+  try {
+    if (on) localStorage.setItem(LS_UNSYNCED, '1')
+    else localStorage.removeItem(LS_UNSYNCED)
+  } catch {
+    /* ignorar */
+  }
+}
 const IGNORED_AUTH = /popup-closed-by-user|cancelled-popup-request/
 
 /**
@@ -110,25 +128,51 @@ export function useStore() {
   const cloudSt = useRef(cloud.status)
   const cloudRev = useRef(0) // revisión de la nube sobre la que está basado lo que ves
   const remoteRef = useRef(null) // versión de la nube en conflicto
+  const waiters = useRef([]) // guardados que esperan a que la nube termine de comprobar
   const putCloud = useCallback((patch) => {
-    if (patch.status) cloudSt.current = patch.status
+    if (patch.status) {
+      cloudSt.current = patch.status
+      if (patch.status !== 'checking') {
+        const w = waiters.current
+        waiters.current = []
+        w.forEach((f) => f())
+      }
+    }
     setCloud((c) => ({ ...c, message: '', ...patch }))
   }, [])
+  // Espera (máx. 12 s) a que la nube salga de "comprobando". Resuelve false si no terminó a tiempo.
+  const settled = useCallback(
+    () =>
+      cloudSt.current !== 'checking'
+        ? Promise.resolve(true)
+        : new Promise((resolve) => {
+            const t = setTimeout(() => resolve(false), 12000)
+            waiters.current.push(() => {
+              clearTimeout(t)
+              resolve(true)
+            })
+          }),
+    [],
+  )
   const handle = useRef(null)
   const pending = useRef(null) // handle recordado que espera permiso
   const localEdits = useRef(false) // hubo cambios mientras el archivo estaba desconectado
   const chain = useRef(Promise.resolve())
 
-  // Guarda en la nube (si hay sesión). Resuelve true si salió bien o si no hay nube.
+  // Guarda en la nube (si hay sesión). Resuelve true si salió bien o si no hay nube (ni sesión) a la que guardar.
+  // Si la nube aún está comprobando la sesión, ESPERA: antes devolvía true sin guardar y el cambio se perdía.
   const writeCloud = useCallback(async () => {
+    if (!cloudConfigured) return true
+    if (cloudSt.current === 'checking' && !(await settled())) return false // no se pudo confirmar → sigue "sin guardar"
     const api = cloudApi.current
     const u = cloudUser.current
-    if (!api || !u || cloudSt.current === 'checking' || cloudSt.current === 'signed-out') return true
+    if (!api || !u || cloudSt.current === 'signed-out') return true // sin sesión: solo local (queda marcado como pendiente)
     if (cloudSt.current === 'conflict') return false
     try {
       const rev = await api.saveDoc(u.uid, serialize(latest.current), cloudRev.current)
       cloudRev.current = rev
       saveKnownRev(u.uid, rev)
+      setUnsynced(false)
       putCloud({ status: 'ready' })
       return true
     } catch (e) {
@@ -141,7 +185,7 @@ export function useStore() {
       }
       return false
     }
-  }, [putCloud])
+  }, [putCloud, settled])
 
   // Escribe localStorage, el archivo vinculado (si hay) y la nube (si hay sesión). true si todo salió bien.
   const writeAll = useCallback(async () => {
@@ -166,6 +210,7 @@ export function useStore() {
         })
       fileOk = await chain.current
     }
+    if (cloudConfigured) setUnsynced(true) // se limpia solo cuando la nube confirma el guardado
     const cloudOk = await writeCloud()
     return fileOk && cloudOk
   }, [writeCloud])
@@ -179,6 +224,9 @@ export function useStore() {
     }
     return ok
   }, [writeAll])
+
+  // Texto JSON (mismo formato que mapas.json) de lo que ves ahora, con o sin guardar. Para exportar.
+  const exportText = useCallback(() => serialize(latest.current), [])
 
   const update = useCallback((fn) => {
     setState((s) => fn(s))
@@ -307,6 +355,7 @@ export function useStore() {
       }
       cloudRev.current = remote.rev
       saveKnownRev(uid, remote.rev)
+      setUnsynced(false)
       remoteRef.current = null
       setDirty(false)
       setSavedAt(new Date())
@@ -333,10 +382,14 @@ export function useStore() {
           return
         }
         const same = readKnownRev(u.uid) === remote.rev
-        if (dirtyRef.current && same) {
+        // "mío" = cambios sin guardar en pantalla O guardados en este navegador pero aún no confirmados en la nube
+        const unsynced = readUnsynced()
+        const mine = dirtyRef.current || unsynced
+        if (mine && same) {
           cloudRev.current = remote.rev // sigues sobre la última versión: tus cambios se suben al guardar
+          if (unsynced) setDirty(true) // y se ve como "Sin guardar" hasta que se suban
           putCloud({ status: 'ready' })
-        } else if (!dirtyRef.current && (same || !hasData(latest.current))) {
+        } else if (!mine && (same || !hasData(latest.current))) {
           adoptRemote(remote, u.uid)
         } else {
           remoteRef.current = remote
@@ -478,6 +531,7 @@ export function useStore() {
     cloudUseRemote,
     cloudKeepLocal,
     flush,
+    exportText,
     setCell,
     createMap,
     openMap,

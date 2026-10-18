@@ -87,7 +87,7 @@ function RewardPicker({ cell, onPick }) {
 export default function MobileEditor({ sel, cell, onSet, onErase, onPrev, onNext }) {
   const t = cell?.t
   const reward = t === 'X' && cell.reward ? REWARD_BY_ID[cell.reward] : null
-  const state = describe(cell) + (reward ? ` · ${reward.name}` : '')
+  const needsReward = t === 'X' && !reward // el selector solo aparece si esta mina aún no tiene recompensa
 
   return (
     <div className="flex max-h-[50dvh] short:max-h-[46dvh] shrink-0 flex-col gap-2.5 overflow-y-auto rounded-t-3xl border border-b-0 border-line bg-surface px-4 pb-[max(env(safe-area-inset-bottom),6px)] pt-4 short:gap-2 short:pt-3">
@@ -102,7 +102,22 @@ export default function MobileEditor({ sel, cell, onSet, onErase, onPrev, onNext
             <span className="truncate text-[15px] font-semibold">
               Fila {sel.r + 1} · Columna {sel.c + 1}
             </span>
-            <span className="truncate text-xs text-ink-2">{state}</span>
+            <div className="flex min-w-0 items-center gap-1.5 text-xs text-ink-2">
+              <span className="min-w-0 truncate">{describe(cell)}</span>
+              {reward && (
+                // etiqueta de la recompensa: tocarla la quita y vuelve a mostrar el selector
+                <button
+                  type="button"
+                  onClick={() => onSet({ t: 'X' })}
+                  aria-label={`Recompensa ${reward.name}: tocar para cambiarla`}
+                  className="-my-1.5 flex shrink-0 items-center gap-1 rounded-md px-1.5 py-[3px] text-[11px] font-medium active:brightness-125"
+                  style={{ background: reward.color + '24', color: reward.color }}
+                >
+                  <reward.icon size={11} />
+                  {reward.name}
+                </button>
+              )}
+            </div>
           </div>
         </div>
         <div className="flex gap-1.5">
@@ -130,7 +145,7 @@ export default function MobileEditor({ sel, cell, onSet, onErase, onPrev, onNext
         <Opt sample={{ t: 'O' }} label="Posible mina" active={t === 'O'} onClick={() => onSet({ t: 'O' })} />
       </div>
 
-      {t === 'X' && <RewardPicker cell={cell} onPick={(id) => onSet({ t: 'X', reward: id })} />}
+      {needsReward && <RewardPicker cell={cell} onPick={(id) => onSet({ t: 'X', reward: id })} />}
 
       <div className="flex gap-1.5">
         <Opt sample={{ t: 'dash' }} label="Posible nº" active={t === 'dash'} onClick={() => onSet({ t: 'dash' })} />
