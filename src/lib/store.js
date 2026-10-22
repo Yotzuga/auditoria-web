@@ -485,16 +485,79 @@ export function useStore() {
     [update],
   )
 
-  const setCell = useCallback(
-    (r, c, cell) =>
-      patchCells((cells) => {
-        const next = { ...cells }
-        if (cell) next[`${r},${c}`] = cell
-        else delete next[`${r},${c}`]
-        return next
-      }),
-    [patchCells],
+  // ---- Deshacer / rehacer (Ctrl Z / Ctrl Y): una pila por mapa, con lo que había antes y después en cada casilla ----
+  const MAX_UNDO = 100
+  const hist = useRef(new Map()) // id del mapa → { past: [{ key, before, after }], future: [...] }
+  const [, bumpHist] = useState(0)
+  const stackOf = (id) => {
+    let h = hist.current.get(id)
+    if (!h) hist.current.set(id, (h = { past: [], future: [] }))
+    return h
+  }
+  const sameCell = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null)
+
+  const writeCell = useCallback(
+    (id, key, cell) =>
+      update((s) => ({
+        ...s,
+        maps: s.maps.map((m) => {
+          if (m.id !== id) return m
+          const cells = { ...m.cells }
+          if (cell) cells[key] = cell
+          else delete cells[key]
+          return { ...m, cells, updatedAt: Date.now() }
+        }),
+      })),
+    [update],
   )
+
+  const setCell = useCallback(
+    (r, c, cell) => {
+      const s = latest.current
+      const m = s.maps.find((x) => x.id === s.currentId)
+      if (!m) return
+      const key = `${r},${c}`
+      const before = m.cells[key] ?? null
+      if (sameCell(before, cell)) return // nada cambia: ni se marca «sin guardar» ni gasta un paso
+      const h = stackOf(m.id)
+      h.past.push({ key, before, after: cell ?? null })
+      if (h.past.length > MAX_UNDO) h.past.shift()
+      h.future.length = 0
+      bumpHist((n) => n + 1)
+      writeCell(m.id, key, cell)
+    },
+    [writeCell],
+  )
+
+  // Devuelve la casilla afectada ({ r, c }) para llevar la selección hasta ella, o null si no había nada que deshacer.
+  const stepHistory = useCallback(
+    (from, to, field, back) => {
+      const s = latest.current
+      const id = s.currentId
+      const h = stackOf(id)
+      const e = h[from].pop()
+      if (!e) return null
+      const m = s.maps.find((x) => x.id === id)
+      // si el mapa cambió por otro lado (archivo, nube), esos pasos ya no valen
+      if (!m || !sameCell(m.cells[e.key] ?? null, e[back])) {
+        h.past.length = 0
+        h.future.length = 0
+        bumpHist((n) => n + 1)
+        return null
+      }
+      h[to].push(e)
+      writeCell(id, e.key, e[field])
+      bumpHist((n) => n + 1)
+      const [r, c] = e.key.split(',').map(Number)
+      return { r, c }
+    },
+    [writeCell],
+  )
+  const undo = useCallback(() => stepHistory('past', 'future', 'before', 'after'), [stepHistory])
+  const redo = useCallback(() => stepHistory('future', 'past', 'after', 'before'), [stepHistory])
+  const cur = hist.current.get(state.currentId)
+  const canUndo = !!cur?.past.length
+  const canRedo = !!cur?.future.length
 
   const createMap = useCallback(
     ({ name, cols, rows, mines }) =>
@@ -533,6 +596,10 @@ export function useStore() {
     flush,
     exportText,
     setCell,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
     createMap,
     openMap,
     deleteMap,

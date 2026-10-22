@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { Maximize, Minus, Plus } from 'lucide-react'
+import { Maximize, Minus, Plus, Redo2, Undo2 } from 'lucide-react'
 import CellGlyph, { cellBg, cellLine } from './CellGlyph'
 import { stats } from '../lib/cells'
 
@@ -31,7 +31,8 @@ const Cell = memo(function Cell({ cell, r, c, size, zoom, on, warn, ring, badge,
         height: size,
         ...(on ? { boxShadow: '0 0 12px #F5B83DAA' } : null),
       }}
-      className={`relative flex shrink-0 items-center justify-center rounded-md ${cellBg(cell)} ${
+      // outline-none: el botón conserva el foco tras un clic y el anillo de foco hacía ver dos casillas seleccionadas
+      className={`relative flex shrink-0 items-center justify-center rounded-md outline-none focus:outline-none focus-visible:outline-none ${cellBg(cell)} ${
         on ? 'border-2 border-accent' : ring ? `${RING[ring]} hover:brightness-125` : `border ${cellLine(cell)} hover:brightness-125`
       }`}
     >
@@ -63,7 +64,7 @@ function Stat({ label, glyph, value, suffix }) {
   )
 }
 
-export default function BoardPanel({ map, sel, onSelect, bad, overlay, fitKey }) {
+export default function BoardPanel({ map, sel, onSelect, bad, overlay, fitKey, history }) {
   const { x, X, total } = useMemo(() => stats(map), [map])
   const [zoom, setZoom] = useState(100)
   const zoneRef = useRef(null)
@@ -195,6 +196,31 @@ export default function BoardPanel({ map, sel, onSelect, bad, overlay, fitKey })
             />
             <Stat label="Total" value={total} suffix={`/${map.mines}`} />
           </div>
+          <div className="flex items-center gap-2">
+          {history && (
+            <div className="flex items-center gap-0.5 rounded-[10px] border border-line bg-surface p-[3px]">
+              <button
+                type="button"
+                className={`${zbtn} disabled:pointer-events-none disabled:opacity-35`}
+                aria-label="Deshacer"
+                title="Deshacer (Ctrl Z)"
+                disabled={!history.canUndo}
+                onClick={history.onUndo}
+              >
+                <Undo2 size={14} />
+              </button>
+              <button
+                type="button"
+                className={`${zbtn} disabled:pointer-events-none disabled:opacity-35`}
+                aria-label="Rehacer"
+                title="Rehacer (Ctrl Y)"
+                disabled={!history.canRedo}
+                onClick={history.onRedo}
+              >
+                <Redo2 size={14} />
+              </button>
+            </div>
+          )}
           <div className="flex items-center gap-0.5 rounded-[10px] border border-line bg-surface p-[3px]">
             <button type="button" className={zbtn} aria-label="Alejar" onClick={() => step(-1)}>
               <Minus size={14} />
@@ -206,6 +232,7 @@ export default function BoardPanel({ map, sel, onSelect, bad, overlay, fitKey })
             <button type="button" className={zbtn} aria-label="Ajustar" onClick={fit}>
               <Maximize size={14} />
             </button>
+          </div>
           </div>
         </div>
 

@@ -1,4 +1,4 @@
-import { Eraser, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react'
+import { Eraser, ChevronLeft, ChevronRight, Sparkles, Undo2 } from 'lucide-react'
 import CellGlyph, { cellBg, LINE } from '../CellGlyph'
 import { NUM_COLORS, describe } from '../../lib/cells'
 import { REWARDS, REWARD_BY_ID } from '../../lib/rewards'
@@ -85,7 +85,7 @@ function RewardPicker({ cell, onPick }) {
 }
 
 /** Hoja inferior para editar la casilla seleccionada (diseño "Editando casilla"). */
-export default function MobileEditor({ sel, cell, onSet, onErase, onPrev, onNext, avisos = [], onGo, onFix, onAll }) {
+export default function MobileEditor({ sel, cell, onSet, onErase, onUndo, canUndo, onPrev, onNext, avisos = [], onGo, onFix, onAll }) {
   const t = cell?.t
   const reward = t === 'X' && cell.reward ? REWARD_BY_ID[cell.reward] : null
   const needsReward = t === 'X' && !reward // el selector solo aparece si esta mina aún no tiene recompensa
@@ -122,6 +122,11 @@ export default function MobileEditor({ sel, cell, onSet, onErase, onPrev, onNext
           </div>
         </div>
         <div className="flex gap-1.5">
+          {onUndo && (
+            <button type="button" className={`${sq} disabled:opacity-35`} onClick={onUndo} disabled={!canUndo} aria-label="Deshacer">
+              <Undo2 size={17} />
+            </button>
+          )}
           <button type="button" className={sq} onClick={onErase} aria-label="Borrar">
             <Eraser size={17} />
           </button>

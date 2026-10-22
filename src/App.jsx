@@ -20,7 +20,7 @@ const NUMPAD = /^Numpad([1-8])$/
 
 export default function App() {
   const {
-    state, map, savedAt, dirty, file, cloud, hasData, flush, exportText, setCell, createMap, openMap, deleteMap,
+    state, map, savedAt, dirty, file, cloud, hasData, flush, exportText, setCell, undo, redo, canUndo, canRedo, createMap, openMap, deleteMap,
     linkNew, linkExisting, reconnect, cloudSignIn, cloudSignOut, cloudUseRemote, cloudKeepLocal,
   } = useStore()
   const mobile = useMedia('(max-width: 767px)') // pantalla vertical: diseño móvil
@@ -52,6 +52,16 @@ export default function App() {
     } else flush()
   }, [file.status, cloud.status, reconnect, flush])
 
+  // deshacer / rehacer: la selección salta a la casilla que cambió, para ver qué se movió
+  const doUndo = useCallback(() => {
+    const rc = undo()
+    if (rc) setSel(rc)
+  }, [undo])
+  const doRedo = useCallback(() => {
+    const rc = redo()
+    if (rc) setSel(rc)
+  }, [redo])
+
   const fixIssue = useCallback((it) => setCell(it.r, it.c, it.fix), [setCell])
 
   // descarga mapas.json con todos los mapas tal como están en pantalla (incluye cambios sin guardar)
@@ -78,6 +88,13 @@ export default function App() {
       if (mod && e.code === 'KeyS') {
         e.preventDefault()
         fileAction()
+        return
+      }
+      // Ctrl Z deshace, Ctrl Y (o Ctrl Mayús Z) rehace; la selección salta a la casilla que cambió
+      if (mod && !e.altKey && (e.code === 'KeyZ' || e.code === 'KeyY')) {
+        e.preventDefault()
+        if (e.code === 'KeyY' || e.shiftKey) doRedo()
+        else doUndo()
         return
       }
       if (mod || e.altKey) return
@@ -135,7 +152,7 @@ export default function App() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [dialog, safeSel, cell, map.rows, map.cols, set, fileAction])
+  }, [dialog, safeSel, cell, map.rows, map.cols, set, fileAction, doUndo, doRedo])
 
   const defaults = {
     name: nextMapName(state.maps),
@@ -168,6 +185,8 @@ export default function App() {
           onFile={() => setDialog('file')}
           onMaps={() => setDialog('maps')}
           onNew={() => setDialog('new')}
+          onUndo={doUndo}
+          canUndo={canUndo}
         />
       ) : (
         <>
@@ -189,7 +208,7 @@ export default function App() {
           onNew={() => setDialog('new')}
         />
         <div className="flex min-h-0 flex-1 max-lg:flex-col max-lg:overflow-y-auto">
-          <BoardPanel map={map} sel={safeSel} onSelect={setSel} bad={rev.cells} overlay={modelo ? overlay : null} fitKey={modelo ? 'm' : 'a'} />
+          <BoardPanel map={map} sel={safeSel} onSelect={setSel} bad={rev.cells} history={{ canUndo, canRedo, onUndo: doUndo, onRedo: doRedo }} overlay={modelo ? overlay : null} fitKey={modelo ? 'm' : 'a'} />
           {!mobile && <ModeloPanel map={map} active={modelo} onGo={setSel} onOverlay={setOverlay} />}
           {!modelo && (
           <Inspector

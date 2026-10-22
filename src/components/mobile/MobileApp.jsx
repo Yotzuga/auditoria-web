@@ -48,7 +48,7 @@ const round = 'relative flex size-[34px] shrink-0 items-center justify-center ro
 /** Pantalla vertical (< 768 px): diseños "Mapa", "Editando casilla" y "Mina revelada (recompensa)". */
 export default function MobileApp({
   map, sel, onSelect, cell, onSet, stat, savedAt, dirty, file, cloud,
-  onSave, onExport, avisos, cerca, onAvisos, onFix, onCloud, onFile, onMaps, onNew,
+  onSave, onExport, avisos, cerca, onAvisos, onFix, onCloud, onFile, onMaps, onNew, onUndo, canUndo,
 }) {
   const [editing, setEditing] = useState(false) // false: vista del mapa con recompensas; true: hoja de edición
   const [rewardsOpen, setRewardsOpen] = useState(false)
@@ -172,6 +172,8 @@ export default function MobileApp({
           cell={cell}
           onSet={onSet}
           onErase={() => onSet(null)}
+          onUndo={onUndo}
+          canUndo={canUndo}
           onPrev={() => move(-1)}
           onNext={() => move(1)}
           avisos={cerca}

@@ -248,6 +248,18 @@ export default function Inspector({ sel, cell, rewardStats, onSet, onErase, avis
             <span className="pl-1 text-xs text-ink-3">Nº conocido</span>
           </div>
         </div>
+        <div className="flex gap-4">
+          <div className="flex flex-1 items-center gap-1">
+            <Kbd>Ctrl</Kbd>
+            <Kbd>Z</Kbd>
+            <span className="pl-1 text-xs text-ink-3">Deshacer</span>
+          </div>
+          <div className="flex flex-1 items-center gap-1">
+            <Kbd>Ctrl</Kbd>
+            <Kbd>Y</Kbd>
+            <span className="pl-1 text-xs text-ink-3">Rehacer</span>
+          </div>
+        </div>
       </section>
     </aside>
   )

@@ -16,37 +16,49 @@ function SaveStatus({ file, savedAt, dirty, onFile }) {
   switch (file.status) {
     case 'ready':
       return (
-        <div className={`hidden w-[158px] md:flex ${pill}`} title={file.name}>
+        <div
+          className={`hidden shrink-0 md:flex min-[1600px]:w-[158px] ${pill}`}
+          title={dirty ? 'Hay cambios sin guardar (Ctrl S)' : `Guardado a las ${hhmm(savedAt)}${file.name ? ` · ${file.name}` : ''}`}
+        >
           <span className={`size-1.5 shrink-0 rounded-full ${dirty ? 'bg-accent' : 'bg-success'}`} />
-          <span className={`${label} truncate ${dirty ? 'text-accent' : 'text-ink-2'}`}>
-            {dirty ? 'Sin guardar · Ctrl S' : `Guardado · ${hhmm(savedAt)}`}
+          <span className={`${label} whitespace-nowrap ${dirty ? 'text-accent' : 'text-ink-2'}`}>
+            {dirty ? (
+              <>
+                Sin guardar<span className="hidden min-[1600px]:inline"> · Ctrl S</span>
+              </>
+            ) : (
+              <>
+                <span className="hidden min-[1600px]:inline">Guardado · </span>
+                {hhmm(savedAt)}
+              </>
+            )}
           </span>
         </div>
       )
     case 'none':
       return (
-        <button type="button" onClick={onFile} className={`hidden md:flex ${act}`}>
+        <button type="button" onClick={onFile} className={`hidden shrink-0 md:flex ${act}`}>
           <span className="size-1.5 rounded-full bg-accent" />
           <span className={`${label} whitespace-nowrap text-accent`}>Vincular mapas.json</span>
         </button>
       )
     case 'needs-permission':
       return (
-        <button type="button" onClick={onFile} className={`hidden md:flex ${act}`} title="El navegador pide permiso otra vez">
+        <button type="button" onClick={onFile} className={`hidden shrink-0 md:flex ${act}`} title="El navegador pide permiso otra vez">
           <span className="size-1.5 rounded-full bg-accent" />
           <span className={`${label} text-accent`}>Reconectar {file.name || 'mapas.json'}</span>
         </button>
       )
     case 'invalid':
       return (
-        <button type="button" onClick={onFile} className={`hidden md:flex ${act}`} title={file.message}>
+        <button type="button" onClick={onFile} className={`hidden shrink-0 md:flex ${act}`} title={file.message}>
           <span className="size-1.5 rounded-full bg-danger" />
           <span className={`${label} text-danger`}>{file.name} no es válido · elegir otro</span>
         </button>
       )
     case 'error':
       return (
-        <button type="button" onClick={onFile} className={`hidden md:flex ${act}`} title={file.message}>
+        <button type="button" onClick={onFile} className={`hidden shrink-0 md:flex ${act}`} title={file.message}>
           <span className="size-1.5 rounded-full bg-danger" />
           <span className={`${label} text-danger`}>No se pudo guardar · reintentar</span>
         </button>
@@ -54,18 +66,27 @@ function SaveStatus({ file, savedAt, dirty, onFile }) {
     case 'unsupported':
       return (
         <div
-          className={`hidden w-[158px] md:flex ${pill}`}
+          className={`hidden shrink-0 md:flex min-[1600px]:w-[158px] ${pill}`}
           title="Este navegador no permite guardar en un archivo; se guarda dentro del navegador"
         >
           <span className={`size-1.5 shrink-0 rounded-full ${dirty ? 'bg-accent' : 'bg-ink-3'}`} />
-          <span className={`${label} truncate ${dirty ? 'text-accent' : 'text-ink-2'}`}>
-            {dirty ? 'Sin guardar · Ctrl S' : 'Solo en el navegador'}
+          <span className={`${label} whitespace-nowrap ${dirty ? 'text-accent' : 'text-ink-2'}`}>
+            {dirty ? (
+              <>
+                Sin guardar<span className="hidden min-[1600px]:inline"> · Ctrl S</span>
+              </>
+            ) : (
+              <>
+                <span className="min-[1600px]:hidden">Local</span>
+                <span className="hidden min-[1600px]:inline">Solo en el navegador</span>
+              </>
+            )}
           </span>
         </div>
       )
     default:
       return (
-        <div className={`hidden md:flex ${pill}`}>
+        <div className={`hidden shrink-0 md:flex ${pill}`}>
           <span className="size-1.5 rounded-full bg-ink-3" />
           <span className={`${label} text-ink-2`}>Cargando…</span>
         </div>
@@ -78,26 +99,34 @@ function CloudPill({ cloud, onCloud }) {
     // solo en desarrollo: avisa en vez de quedarse callado cuando faltan las variables VITE_FIREBASE_*
     return import.meta.env.DEV ? (
       <span
-        className="hidden font-num text-[11px] text-ink-3 md:inline"
-        title={`Faltan: ${missingVars.join(', ') || '—'}. Crea .env.local y reinicia npm run dev`}
+        className="hidden shrink-0 items-center gap-1.5 font-num text-[11px] text-ink-3 md:flex"
+        title={`Nube sin configurar (${4 - missingVars.length}/4 variables). Faltan: ${missingVars.join(', ') || '—'}. Crea .env.local y reinicia npm run dev`}
       >
-        Nube sin configurar ({4 - missingVars.length}/4 variables)
+        <CloudOff size={12} />
+        <span className="hidden min-[1600px]:inline">Nube sin configurar ({4 - missingVars.length}/4 variables)</span>
       </span>
     ) : null
   }
-  const pill = 'hidden items-center gap-1.5 rounded-full bg-surface px-2.5 py-[5px] hover:bg-surface-2 md:flex'
+  const pill = 'hidden shrink-0 items-center gap-1.5 rounded-full bg-surface px-2.5 py-[5px] hover:bg-surface-2 md:flex'
   const v = {
-    checking: { icon: Cloud, color: 'text-ink-3', text: 'Nube…' },
-    'signed-out': { icon: CloudOff, color: 'text-accent', text: 'Iniciar sesión · nube' },
-    ready: { icon: Cloud, color: 'text-success', text: 'Nube' },
-    conflict: { icon: CloudOff, color: 'text-danger', text: 'Nube: conflicto · resolver' },
-    error: { icon: CloudOff, color: 'text-danger', text: 'Nube: error · reintentar' },
+    checking: { icon: Cloud, color: 'text-ink-3', text: 'Nube…', tip: 'Conectando con la nube…', quiet: true },
+    'signed-out': { icon: CloudOff, color: 'text-accent', text: 'Iniciar sesión', tip: 'Iniciar sesión para guardar en la nube' },
+    ready: { icon: Cloud, color: 'text-success', text: 'Nube', tip: 'Nube conectada', quiet: true },
+    conflict: { icon: CloudOff, color: 'text-danger', text: 'Conflicto · resolver', tip: 'Nube: conflicto, hay que resolverlo' },
+    error: { icon: CloudOff, color: 'text-danger', text: 'Error · reintentar', tip: 'Nube: error, pulsa para reintentar' },
   }[cloud.status]
   const I = v.icon
+  // conectada o conectando: solo el icono (el texto aparece en pantallas anchas); si pide atención, siempre con texto
   return (
-    <button type="button" onClick={onCloud} className={pill} title={cloud.email || cloud.message}>
+    <button
+      type="button"
+      onClick={onCloud}
+      className={pill}
+      title={[v.tip, cloud.email, cloud.message].filter(Boolean).join(' · ')}
+      aria-label={v.tip}
+    >
       <I size={12} className={v.color} />
-      <span className={`font-num text-[11px] ${v.color}`}>{v.text}</span>
+      <span className={`font-num text-[11px] ${v.color} ${v.quiet ? 'hidden min-[1600px]:inline' : ''}`}>{v.text}</span>
     </button>
   )
 }
@@ -132,7 +161,7 @@ export default function TopBar({ map, savedAt, dirty, file, cloud, onFile, onClo
     file.status === 'none' && ['ready', 'conflict', 'error'].includes(cloud.status) ? { ...file, status: 'ready', name: 'Nube' } : file
   return (
     <header className="flex h-16 shrink-0 items-center justify-between gap-4 border-b border-line px-7">
-      <div className="flex min-w-0 shrink items-center gap-3">
+      <div className="flex min-w-0 flex-1 items-center gap-3 overflow-hidden">
         <div className="flex size-[30px] shrink-0 items-center justify-center rounded-lg bg-accent-soft">
           <Grid3x3 size={16} className="text-accent" />
         </div>
@@ -144,7 +173,7 @@ export default function TopBar({ map, savedAt, dirty, file, cloud, onFile, onClo
           className="flex min-w-0 shrink-0 items-center gap-2 rounded-lg px-2.5 py-1.5 hover:bg-surface"
         >
           <span className="max-w-[180px] truncate whitespace-nowrap text-sm font-medium">{map.name}</span>
-          <span className="hidden whitespace-nowrap text-xs text-ink-3 md:inline">
+          <span className="hidden whitespace-nowrap text-xs text-ink-3 xl:inline">
             {map.cols}×{map.rows} · {map.mines} minas
           </span>
           <ChevronDown size={14} className="text-ink-2" />
@@ -156,7 +185,7 @@ export default function TopBar({ map, savedAt, dirty, file, cloud, onFile, onClo
             type="button"
             onClick={onAvisos}
             title="Revisión del tablero según las reglas del juego"
-            className="flex items-center gap-1.5 rounded-full bg-danger/15 px-2.5 py-[5px] hover:brightness-125"
+            className="flex shrink-0 items-center gap-1.5 rounded-full bg-danger/15 px-2.5 py-[5px] hover:brightness-125"
           >
             <AlertTriangle size={12} className="text-danger" />
             <span className="font-num text-[11px] text-danger">
@@ -166,24 +195,24 @@ export default function TopBar({ map, savedAt, dirty, file, cloud, onFile, onClo
         )}
       </div>
 
-      <div className="flex items-center gap-2">
-        <button type="button" className={btn} onClick={onMaps}>
+      <div className="flex shrink-0 items-center gap-2">
+        <button type="button" className={btn} onClick={onMaps} title="Mis mapas" aria-label="Mis mapas">
           <FolderOpen size={15} />
-          <span className="hidden md:inline">Mis mapas</span>
+          <span className="hidden min-[1600px]:inline">Mis mapas</span>
         </button>
-        <button type="button" className={btn} onClick={onSave}>
+        <button type="button" className={btn} onClick={onSave} title="Guardar (Ctrl S)" aria-label="Guardar">
           <Save size={15} />
-          <span className="hidden md:inline">Guardar</span>
-          <span className="hidden font-num text-[11px] font-normal text-ink-3 lg:inline">Ctrl S</span>
+          <span className="hidden min-[1600px]:inline">Guardar</span>
+          <span className="hidden font-num text-[11px] font-normal text-ink-3 min-[1800px]:inline">Ctrl S</span>
         </button>
-        <button type="button" className={btn} onClick={onExport} title="Descargar mapas.json con todos los mapas">
+        <button type="button" className={btn} onClick={onExport} title="Descargar mapas.json con todos los mapas" aria-label="Exportar">
           <Download size={15} />
-          <span className="hidden md:inline">Exportar</span>
+          <span className="hidden min-[1600px]:inline">Exportar</span>
         </button>
         <ModeToggle mode={mode} onMode={onMode} />
-        <button type="button" className={btn} onClick={onNew}>
+        <button type="button" className={btn} onClick={onNew} title="Nuevo mapa" aria-label="Nuevo mapa">
           <Plus size={15} />
-          <span className="hidden md:inline">Nuevo mapa</span>
+          <span className="hidden min-[1600px]:inline">Nuevo mapa</span>
         </button>
       </div>
     </header>
