@@ -1,5 +1,5 @@
 import { missingVars } from '../lib/cloudConfig'
-import { AlertTriangle, ChevronDown, Cloud, CloudOff, Download, FolderOpen, Grid3x3, Plus, Save } from 'lucide-react'
+import { AlertTriangle, ChevronDown, Cloud, CloudOff, Crosshair, Download, FolderOpen, Grid3x3, Plus, Save, SquarePen } from 'lucide-react'
 
 const btn =
   'flex h-9 shrink-0 items-center gap-2 whitespace-nowrap rounded-[10px] border border-line bg-surface px-3.5 text-[13px] font-medium text-ink hover:bg-surface-2'
@@ -27,7 +27,7 @@ function SaveStatus({ file, savedAt, dirty, onFile }) {
       return (
         <button type="button" onClick={onFile} className={`hidden md:flex ${act}`}>
           <span className="size-1.5 rounded-full bg-accent" />
-          <span className={`${label} text-accent`}>Vincular mapas.json</span>
+          <span className={`${label} whitespace-nowrap text-accent`}>Vincular mapas.json</span>
         </button>
       )
     case 'needs-permission':
@@ -102,7 +102,31 @@ function CloudPill({ cloud, onCloud }) {
   )
 }
 
-export default function TopBar({ map, savedAt, dirty, file, cloud, onFile, onCloud, onSave, onExport, avisos = 0, onAvisos, onMaps, onNew }) {
+function ModeToggle({ mode, onMode }) {
+  const item = (id, label, Icon, on) => (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={mode === id}
+      onClick={() => onMode(id)}
+      title={id === 'modelo' ? 'Revisar, plan y registro de disparos con el motor local' : 'Editar el tablero'}
+      className={`flex h-[30px] items-center gap-2 rounded-lg px-3 text-[13px] ${
+        mode === id ? `bg-bg font-semibold ${on}` : 'font-medium text-ink-2 hover:text-ink'
+      }`}
+    >
+      <Icon size={14} />
+      <span className="hidden md:inline">{label}</span>
+    </button>
+  )
+  return (
+    <div role="tablist" aria-label="Vista" className="flex items-center gap-0.5 rounded-[10px] border border-line bg-surface p-[3px]">
+      {item('auditoria', 'Auditoría', SquarePen, 'text-ink [&>svg]:text-accent')}
+      {item('modelo', 'Modelo', Crosshair, 'text-model')}
+    </div>
+  )
+}
+
+export default function TopBar({ map, savedAt, dirty, file, cloud, onFile, onCloud, onSave, onExport, mode = 'auditoria', onMode, avisos = 0, onAvisos, onMaps, onNew }) {
   // con la nube conectada, no hace falta vincular un archivo: el estado de guardado ya es el de la nube
   const fileView =
     file.status === 'none' && ['ready', 'conflict', 'error'].includes(cloud.status) ? { ...file, status: 'ready', name: 'Nube' } : file
@@ -117,9 +141,9 @@ export default function TopBar({ map, savedAt, dirty, file, cloud, onFile, onClo
         <button
           type="button"
           onClick={onMaps}
-          className="flex min-w-0 items-center gap-2 rounded-lg px-2.5 py-1.5 hover:bg-surface"
+          className="flex min-w-0 shrink-0 items-center gap-2 rounded-lg px-2.5 py-1.5 hover:bg-surface"
         >
-          <span className="truncate whitespace-nowrap text-sm font-medium">{map.name}</span>
+          <span className="max-w-[180px] truncate whitespace-nowrap text-sm font-medium">{map.name}</span>
           <span className="hidden whitespace-nowrap text-xs text-ink-3 md:inline">
             {map.cols}×{map.rows} · {map.mines} minas
           </span>
@@ -156,6 +180,7 @@ export default function TopBar({ map, savedAt, dirty, file, cloud, onFile, onClo
           <Download size={15} />
           <span className="hidden md:inline">Exportar</span>
         </button>
+        <ModeToggle mode={mode} onMode={onMode} />
         <button type="button" className={btn} onClick={onNew}>
           <Plus size={15} />
           <span className="hidden md:inline">Nuevo mapa</span>

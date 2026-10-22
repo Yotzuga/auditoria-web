@@ -1,5 +1,5 @@
 import { Eraser, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react'
-import CellGlyph, { cellBg } from '../CellGlyph'
+import CellGlyph, { cellBg, LINE } from '../CellGlyph'
 import { NUM_COLORS, describe } from '../../lib/cells'
 import { REWARDS, REWARD_BY_ID } from '../../lib/rewards'
 import Avisos from '../Avisos'
@@ -13,7 +13,7 @@ function Opt({ sample, label, active, bg = 'bg-cell-hidden', onClick }) {
       onClick={onClick}
       aria-pressed={active}
       className={`flex h-14 flex-1 flex-col items-center justify-center gap-[5px] rounded-[11px] border short:h-12 short:gap-0.5 ${bg} ${
-        active ? 'border-accent' : 'border-line'
+        active ? 'border-accent' : LINE[bg]
       }`}
     >
       <span className="flex size-5 items-center justify-center">
@@ -37,7 +37,7 @@ function NumRow({ kind, cell, onPick, bg }) {
             aria-label={kind === 'num' ? `Número revelado ${n}` : `Número conocido ${n}`}
             aria-pressed={active}
             className={`h-10 flex-1 rounded-[10px] border font-num text-[15px] font-bold short:h-9 ${bg} ${
-              active ? 'border-accent' : 'border-line'
+              active ? 'border-accent' : LINE[bg]
             }`}
             style={{ color: NUM_COLORS[n] }}
           >
@@ -151,9 +151,9 @@ export default function MobileEditor({ sel, cell, onSet, onErase, onPrev, onNext
       {needsReward && <RewardPicker cell={cell} onPick={(id) => onSet({ t: 'X', reward: id })} />}
 
       <div className="flex gap-1.5">
-        <Opt sample={{ t: 'dash' }} label="Posible nº" active={t === 'dash'} onClick={() => onSet({ t: 'dash' })} />
         <Opt sample={{ t: 'hash' }} label="Nº seguro" active={t === 'hash'} onClick={() => onSet({ t: 'hash' })} />
         <Opt sample={{ t: 'red' }} label="Sin certeza" active={t === 'red'} onClick={() => onSet({ t: 'red' })} />
+        <Opt sample={{ t: 'dash' }} label="Posible nº" active={t === 'dash'} onClick={() => onSet({ t: 'dash' })} />
         <Opt sample={{ t: 'zero' }} label="Cero" bg="bg-cell-open" active={t === 'zero'} onClick={() => onSet({ t: 'zero' })} />
       </div>
 

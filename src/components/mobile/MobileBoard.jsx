@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Minimize2 } from 'lucide-react'
-import CellGlyph, { cellBg } from '../CellGlyph'
+import CellGlyph, { cellBg, cellLine } from '../CellGlyph'
 
 // Márgenes dentro del área desplazable. Arriba/izquierda se reserva la banda de las reglas y abajo la de
 // los controles (zoom y minimapa), así las casillas de los bordes pueden quedar libres y tocables.
@@ -23,7 +23,7 @@ const Cell = memo(function Cell({ cell, r, c, size, on, warn }) {
         borderRadius: Math.max(3, size * 0.21),
         ...(on ? { boxShadow: '0 0 10px #F5B83DAA' } : null),
       }}
-      className={`relative flex shrink-0 items-center justify-center ${cellBg(cell)} ${on ? 'border-2 border-accent' : ''}`}
+      className={`relative flex shrink-0 items-center justify-center ${cellBg(cell)} ${on ? 'border-2 border-accent' : `border ${cellLine(cell)}`}`}
     >
       <CellGlyph cell={cell} fs={size * 0.7} />
       {warn && (
@@ -43,7 +43,7 @@ const pill = 'pointer-events-none absolute flex h-[15px] min-w-[22px] items-cent
  * números de fila/columna en los bordes, minimapa y desplazamiento táctil.
  * 100 % = el mapa completo cabe a lo ancho (como en el diseño "Mapa").
  */
-export default function MobileBoard({ map, sel, onSelect, bad }) {
+export default function MobileBoard({ map, sel, onSelect, bad, active = true, onFull }) {
   const hostRef = useRef(null)
   const scrollRef = useRef(null)
   const [box, setBox] = useState({ w: 358, h: 338 })
@@ -173,7 +173,7 @@ export default function MobileBoard({ map, sel, onSelect, bad }) {
   // mantener visible la casilla seleccionada (solo mueve el scroll del visor)
   useEffect(() => {
     const el = scrollRef.current
-    if (!el) return
+    if (!el || !active) return
     const b = calc(zoomRef.current)
     const x0 = b.offX + PAD_L + sel.c * (b.size + b.gap)
     const y0 = b.offY + PAD_T + sel.r * (b.size + b.gap)
@@ -183,7 +183,7 @@ export default function MobileBoard({ map, sel, onSelect, bad }) {
     const mb = 76 // deja libre la zona del zoom y el minimapa
     if (y0 - m < el.scrollTop) el.scrollTop = y0 - m
     else if (y0 + b.size + mb > el.scrollTop + box.h) el.scrollTop = y0 + b.size + mb - box.h
-  }, [sel.r, sel.c, box.w, box.h]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [sel.r, sel.c, box.w, box.h, active]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const tap = (e) => {
     const t = e.target.closest('[data-rc]')
@@ -201,11 +201,11 @@ export default function MobileBoard({ map, sel, onSelect, bad }) {
   const rowPills = []
   for (let k = 5; k <= map.cols; k += 5) {
     const x = colX(k - 1)
-    if (k - 1 !== sel.c && Math.abs(x - selX) >= 24 && x > 14 && x < box.w - 14) colPills.push([k, x])
+    if ((!active || (k - 1 !== sel.c && Math.abs(x - selX) >= 24)) && x > 14 && x < box.w - 14) colPills.push([k, x])
   }
   for (let k = 5; k <= map.rows; k += 5) {
     const y = rowY(k - 1)
-    if (k - 1 !== sel.r && Math.abs(y - selY) >= 19 && y > 10 && y < box.h - 10) rowPills.push([k, y])
+    if ((!active || (k - 1 !== sel.r && Math.abs(y - selY) >= 19)) && y > 10 && y < box.h - 10) rowPills.push([k, y])
   }
 
   // ---- minimapa ----
@@ -232,7 +232,7 @@ export default function MobileBoard({ map, sel, onSelect, bad }) {
     const cells = []
     for (let c = 0; c < map.cols; c++) {
       cells.push(
-        <Cell key={c} cell={map.cells[`${r},${c}`]} r={r} c={c} size={L.size} on={sel.r === r && sel.c === c} warn={bad ? bad.has(`${r},${c}`) : false} />,
+        <Cell key={c} cell={map.cells[`${r},${c}`]} r={r} c={c} size={L.size} on={active && sel.r === r && sel.c === c} warn={bad ? bad.has(`${r},${c}`) : false} />,
       )
     }
     rows.push(
@@ -276,27 +276,31 @@ export default function MobileBoard({ map, sel, onSelect, bad }) {
       {/* números de columna y fila */}
       <div className={`pointer-events-none absolute inset-0 transition-opacity duration-150 ${rulers ? 'opacity-100' : 'opacity-0'}`}>
         {colPills.map(([k, x]) => (
-          <span key={'c' + k} className={`${pill} bg-[#0A0B0EDD] font-medium text-ink-2`} style={{ left: x - 11, top: 4 }}>
+          <span key={'c' + k} className={`${pill} bg-surface-2 font-medium text-ink-2`} style={{ left: x - 11, top: 4 }}>
             {k}
           </span>
         ))}
         {rowPills.map(([k, y]) => (
-          <span key={'r' + k} className={`${pill} bg-[#0A0B0EDD] font-medium text-ink-2`} style={{ left: 4, top: y - 7.5 }}>
+          <span key={'r' + k} className={`${pill} bg-surface-2 font-medium text-ink-2`} style={{ left: 4, top: y - 7.5 }}>
             {k}
           </span>
         ))}
-        <span
-          className={`${pill} bg-accent font-bold text-[#1A1305]`}
-          style={{ left: Math.max(4, Math.min(box.w - 26, selX - 11)), top: 4 }}
-        >
-          {sel.c + 1}
-        </span>
-        <span
-          className={`${pill} bg-accent font-bold text-[#1A1305]`}
-          style={{ left: 4, top: Math.max(4, Math.min(box.h - 19, selY - 7.5)) }}
-        >
-          {sel.r + 1}
-        </span>
+        {active && (
+          <>
+            <span
+              className={`${pill} bg-accent font-bold text-[#1A1305]`}
+              style={{ left: Math.max(4, Math.min(box.w - 26, selX - 11)), top: 4 }}
+            >
+              {sel.c + 1}
+            </span>
+            <span
+              className={`${pill} bg-accent font-bold text-[#1A1305]`}
+              style={{ left: 4, top: Math.max(4, Math.min(box.h - 19, selY - 7.5)) }}
+            >
+              {sel.r + 1}
+            </span>
+          </>
+        )}
       </div>
 
       {/* zoom */}
@@ -311,6 +315,7 @@ export default function MobileBoard({ map, sel, onSelect, bad }) {
             const el = scrollRef.current
             el.scrollLeft = 0
             el.scrollTop = 0
+            onFull?.()
           }}
           aria-label="Ver mapa completo"
           className="flex size-7 items-center justify-center rounded-full bg-surface-2"

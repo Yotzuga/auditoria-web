@@ -1,6 +1,8 @@
-import { AlertTriangle, Download, FolderOpen, Plus, Save } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { AlertTriangle, FolderOpen, Plus, Save } from 'lucide-react'
 import MobileBoard from './MobileBoard'
 import MobileEditor from './MobileEditor'
+import { RewardsSheet, RewardsSummary } from './MobileRewards'
 
 const hhmm = (d) => d.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit', hour12: false })
 
@@ -43,11 +45,14 @@ function Stat({ label, glyph, value, suffix }) {
 
 const round = 'relative flex size-[34px] shrink-0 items-center justify-center rounded-full border border-line bg-surface'
 
-/** Pantalla vertical (< 768 px): diseños "Editando casilla" y "Mina revelada (recompensa)". */
+/** Pantalla vertical (< 768 px): diseños "Mapa", "Editando casilla" y "Mina revelada (recompensa)". */
 export default function MobileApp({
   map, sel, onSelect, cell, onSet, stat, savedAt, dirty, file, cloud,
   onSave, onExport, avisos, cerca, onAvisos, onFix, onCloud, onFile, onMaps, onNew,
 }) {
+  const [editing, setEditing] = useState(false) // false: vista del mapa con recompensas; true: hoja de edición
+  const [rewardsOpen, setRewardsOpen] = useState(false)
+  useEffect(() => setEditing(false), [map.id])
   const s = statusOf({ dirty, savedAt, file, cloud })
   const [dot, txt] = TONE[s.tone]
   const denom = Math.max(map.mines, 1)
@@ -106,17 +111,14 @@ export default function MobileApp({
               <Save size={16} className={dirty ? 'text-accent' : 'text-ink'} />
               {dirty && <span className="absolute right-0 top-0 size-2 rounded-full border border-bg bg-accent" />}
             </button>
-            <button type="button" className={round} onClick={onExport} aria-label="Exportar JSON">
-              <Download size={16} />
-            </button>
             <button
               type="button"
               onClick={onNew}
               aria-label="Nuevo mapa"
-              className="flex items-center gap-1.5 whitespace-nowrap rounded-full border border-line bg-surface px-3.5 py-[9px] text-[13px] font-medium max-[429px]:size-[34px] max-[429px]:justify-center max-[429px]:p-0"
+              className="flex items-center gap-1.5 whitespace-nowrap rounded-full border border-line bg-surface px-3.5 py-[9px] text-[13px] font-medium max-[359px]:size-[34px] max-[359px]:justify-center max-[359px]:p-0"
             >
               <Plus size={15} />
-              <span className="max-[429px]:hidden">Nuevo mapa</span>
+              <span className="max-[359px]:hidden">Nuevo mapa</span>
             </button>
           </div>
         </div>
@@ -126,7 +128,7 @@ export default function MobileApp({
             <Stat
               label="Marcadas"
               glyph={
-                <span className="flex size-4 items-center justify-center rounded bg-cell-hidden font-num text-[10px] font-bold text-accent">
+                <span className="flex size-4 items-center justify-center rounded border border-cell-hidden-line bg-cell-hidden font-num text-[10px] font-bold text-accent">
                   x
                 </span>
               }
@@ -135,7 +137,7 @@ export default function MobileApp({
             <Stat
               label="Reveladas"
               glyph={
-                <span className="flex size-4 items-center justify-center rounded bg-cell-open font-num text-[10px] font-bold text-accent">
+                <span className="flex size-4 items-center justify-center rounded border border-cell-open-line bg-cell-open font-num text-[10px] font-bold text-accent">
                   X
                 </span>
               }
@@ -151,21 +153,36 @@ export default function MobileApp({
       </div>
 
       <div className="flex min-h-[210px] flex-1 flex-col px-4 pb-4">
-        <MobileBoard map={map} sel={sel} onSelect={onSelect} bad={avisos.cells} />
+        <MobileBoard
+          map={map}
+          sel={sel}
+          onSelect={(rc) => {
+            onSelect(rc)
+            setEditing(true)
+          }}
+          bad={avisos.cells}
+          active={editing}
+          onFull={() => setEditing(false)}
+        />
       </div>
 
-      <MobileEditor
-        sel={sel}
-        cell={cell}
-        onSet={onSet}
-        onErase={() => onSet(null)}
-        onPrev={() => move(-1)}
-        onNext={() => move(1)}
-        avisos={cerca}
-        onGo={onSelect}
-        onFix={onFix}
-        onAll={onAvisos}
-      />
+      {editing ? (
+        <MobileEditor
+          sel={sel}
+          cell={cell}
+          onSet={onSet}
+          onErase={() => onSet(null)}
+          onPrev={() => move(-1)}
+          onNext={() => move(1)}
+          avisos={cerca}
+          onGo={onSelect}
+          onFix={onFix}
+          onAll={onAvisos}
+        />
+      ) : (
+        <RewardsSummary stat={stat} empty={Object.keys(map.cells).length === 0} onOpen={() => setRewardsOpen(true)} />
+      )}
+      {rewardsOpen && <RewardsSheet stat={stat} mapName={map.name} onClose={() => setRewardsOpen(false)} />}
     </div>
   )
 }

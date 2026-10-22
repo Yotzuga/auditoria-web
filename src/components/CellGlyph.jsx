@@ -7,6 +7,17 @@ export function cellBg(cell) {
   return 'bg-cell-hidden'
 }
 
+/** Color del borde de 1 px según el fondo (`bg-cell-open` / `bg-cell-hidden`). */
+export const LINE = {
+  'bg-cell-open': 'border-cell-open-line',
+  'bg-cell-hidden': 'border-cell-hidden-line',
+}
+
+/** Borde de 1 px de una casilla según su tipo. */
+export function cellLine(cell) {
+  return LINE[cellBg(cell)]
+}
+
 /** Símbolo dibujado dentro de una casilla. `fs` = tamaño de fuente en px. */
 export default function CellGlyph({ cell, fs = 15 }) {
   if (!cell) return null

@@ -11,8 +11,10 @@
   --color-bg: #0a0b0e;
   --color-surface: #121419;
   --color-surface-2: #1b1e25;
-  --color-cell-hidden: #21252d;
-  --color-cell-open: #0e1014;
+  --color-cell-hidden: #2e333c;
+  --color-cell-open: #07080a;
+  --color-cell-hidden-line: #3b414b; /* borde de 1 px de las casillas sin abrir */
+  --color-cell-open-line: #1d2027; /* borde de 1 px de las casillas abiertas */
   --color-line: #1f232a; /* $border */
   --color-ink: #edeef0; /* $text-primary */
   --color-ink-2: #8b909a; /* $text-secondary */
@@ -30,6 +32,10 @@
   --color-r-gachas: #e879f9;
   --color-r-cartas: #fb8a6e;
   --color-r-variado: #86efac;
+  --color-model: #7dd3fc; /* panel Modelo */
+  --color-model-soft: #7dd3fc14;
+  --color-model-strong: #7dd3fc2e;
+  --color-model-ink: #082f49;
 
   --font-ui: "Inter Variable", Inter, system-ui, sans-serif;
   --font-num: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, monospace;

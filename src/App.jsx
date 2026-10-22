@@ -7,6 +7,7 @@ import MapsDialog from './components/MapsDialog'
 import FileDialog from './components/FileDialog'
 import CloudDialog from './components/CloudDialog'
 import AvisosDialog from './components/AvisosDialog'
+import ModeloPanel from './components/modelo/ModeloPanel'
 import MobileApp from './components/mobile/MobileApp'
 import { useMedia } from './lib/useMedia'
 import { key, stats } from './lib/cells'
@@ -24,7 +25,10 @@ export default function App() {
   } = useStore()
   const mobile = useMedia('(max-width: 767px)') // pantalla vertical: diseño móvil
   const [sel, setSel] = useState({ r: 0, c: 0 })
-  const [dialog, setDialog] = useState(null) // 'new' | 'maps' | 'file' | 'cloud' | null
+  const [dialog, setDialog] = useState(null) // 'new' | 'maps' | 'file' | 'cloud' | 'avisos' | null
+  const [mode, setMode] = useState('auditoria') // escritorio: 'auditoria' (editar) | 'modelo' (panel del motor local)
+  const [overlay, setOverlay] = useState(null) // lo que el panel Modelo resalta en el tablero
+  const modelo = mode === 'modelo' && !mobile
 
   // mantener la selección dentro del tablero al cambiar de mapa
   const safeSel = { r: Math.min(sel.r, map.rows - 1), c: Math.min(sel.c, map.cols - 1) }
@@ -125,9 +129,9 @@ export default function App() {
         return set(e.shiftKey ? { t: 'X', reward: cell?.t === 'X' ? cell.reward : undefined } : { t: 'x' })
       }
       if (e.code === 'KeyO' || e.code === 'KeyR') return e.preventDefault(), set({ t: 'O' })
-      if (e.code === 'KeyQ') return e.preventDefault(), set({ t: 'dash' })
-      if (e.code === 'KeyW') return e.preventDefault(), set({ t: 'hash' })
-      if (e.code === 'KeyE') return e.preventDefault(), set({ t: 'red' })
+      if (e.code === 'KeyQ') return e.preventDefault(), set({ t: 'hash' })
+      if (e.code === 'KeyW') return e.preventDefault(), set({ t: 'red' })
+      if (e.code === 'KeyE') return e.preventDefault(), set({ t: 'dash' })
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -177,13 +181,17 @@ export default function App() {
           onCloud={cloudAction}
           onSave={fileAction}
           onExport={exportJson}
+          mode={mode}
+          onMode={setMode}
           avisos={rev.count}
           onAvisos={() => setDialog('avisos')}
           onMaps={() => setDialog('maps')}
           onNew={() => setDialog('new')}
         />
         <div className="flex min-h-0 flex-1 max-lg:flex-col max-lg:overflow-y-auto">
-          <BoardPanel map={map} sel={safeSel} onSelect={setSel} bad={rev.cells} />
+          <BoardPanel map={map} sel={safeSel} onSelect={setSel} bad={rev.cells} overlay={modelo ? overlay : null} fitKey={modelo ? 'm' : 'a'} />
+          {!mobile && <ModeloPanel map={map} active={modelo} onGo={setSel} onOverlay={setOverlay} />}
+          {!modelo && (
           <Inspector
             sel={safeSel}
             cell={cell}
@@ -195,6 +203,7 @@ export default function App() {
             onFix={fixIssue}
             onAllAvisos={() => setDialog('avisos')}
           />
+          )}
         </div>
         </>
       )}
@@ -256,6 +265,7 @@ export default function App() {
             setDialog(null)
           }}
           onDelete={deleteMap}
+          onExport={exportJson}
         />
       )}
     </div>

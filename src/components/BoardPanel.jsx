@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Maximize, Minus, Plus } from 'lucide-react'
-import CellGlyph, { cellBg } from './CellGlyph'
+import CellGlyph, { cellBg, cellLine } from './CellGlyph'
 import { stats } from '../lib/cells'
 
 const BASE = 30
@@ -11,7 +11,14 @@ const ZOOMS = [40, 50, 60, 70, 80, 90, 100, 110, 125, 150, 175, 200]
 const zbtn = 'flex size-7 items-center justify-center rounded-[7px] text-ink-2 hover:bg-surface-2 hover:text-ink'
 
 // Una casilla solo se vuelve a dibujar si cambia ella misma, su tamaño o si se (de)selecciona.
-const Cell = memo(function Cell({ cell, r, c, size, zoom, on, warn, onSelect }) {
+const RING = {
+  safe: 'border-2 border-success',
+  bad: 'border-2 border-danger',
+  mine: 'border-2 border-dashed border-accent',
+  win: 'border-2 border-model/80',
+}
+
+const Cell = memo(function Cell({ cell, r, c, size, zoom, on, warn, ring, badge, onSelect }) {
   return (
     <button
       type="button"
@@ -25,11 +32,16 @@ const Cell = memo(function Cell({ cell, r, c, size, zoom, on, warn, onSelect }) 
         ...(on ? { boxShadow: '0 0 12px #F5B83DAA' } : null),
       }}
       className={`relative flex shrink-0 items-center justify-center rounded-md ${cellBg(cell)} ${
-        on ? 'border-2 border-accent' : 'hover:brightness-125'
+        on ? 'border-2 border-accent' : ring ? `${RING[ring]} hover:brightness-125` : `border ${cellLine(cell)} hover:brightness-125`
       }`}
     >
       <CellGlyph cell={cell} fs={(15 * zoom) / 100} />
       {warn && <span className="pointer-events-none absolute right-[2px] top-[2px] size-[6px] rounded-full bg-danger" />}
+      {badge != null && (
+        <span className="pointer-events-none absolute -left-1.5 -top-1.5 z-10 flex h-[15px] min-w-[15px] items-center justify-center rounded-full bg-model px-[3px] font-num text-[9px] font-bold leading-none text-model-ink">
+          {badge}
+        </span>
+      )}
     </button>
   )
 })
@@ -51,7 +63,7 @@ function Stat({ label, glyph, value, suffix }) {
   )
 }
 
-export default function BoardPanel({ map, sel, onSelect, bad }) {
+export default function BoardPanel({ map, sel, onSelect, bad, overlay, fitKey }) {
   const { x, X, total } = useMemo(() => stats(map), [map])
   const [zoom, setZoom] = useState(100)
   const zoneRef = useRef(null)
@@ -81,7 +93,7 @@ export default function BoardPanel({ map, sel, onSelect, bad }) {
     const natH = map.rows * (BASE + GAP) - GAP + PAD * 2
     if (natW > el.clientWidth - 80 || natH > (el.clientHeight - 152) * 1.1) fit()
     else setZoom(100)
-  }, [map.id, fit, map.cols, map.rows])
+  }, [map.id, fit, map.cols, map.rows, fitKey])
 
   const step = (dir) => {
     const i = ZOOMS.findIndex((v) => v >= zoom)
@@ -125,6 +137,9 @@ export default function BoardPanel({ map, sel, onSelect, bad }) {
   const selX = center(sel.c)
   const selY = center(sel.r)
 
+  // lo que resalta el panel Modelo: anillos (seguras, minas deducidas, inconsistencias), números del plan y la ventana elegida
+  const win = useMemo(() => new Set(overlay?.win || []), [overlay])
+
   const rows = []
   for (let r = 0; r < map.rows; r++) {
     const cells = []
@@ -139,6 +154,8 @@ export default function BoardPanel({ map, sel, onSelect, bad }) {
           zoom={zoom}
           on={sel.r === r && sel.c === c}
           warn={bad ? bad.has(`${r},${c}`) : false}
+          ring={overlay?.rings?.[`${r},${c}`] || (win.has(`${r},${c}`) ? 'win' : undefined)}
+          badge={overlay?.badges?.[`${r},${c}`]}
           onSelect={onSelect}
         />,
       )
@@ -161,7 +178,7 @@ export default function BoardPanel({ map, sel, onSelect, bad }) {
             <Stat
               label="Marcadas"
               glyph={
-                <span className="flex size-4 items-center justify-center rounded-[4px] bg-cell-hidden font-num text-[10px] font-bold text-accent">
+                <span className="flex size-4 items-center justify-center rounded-[4px] border border-cell-hidden-line bg-cell-hidden font-num text-[10px] font-bold text-accent">
                   x
                 </span>
               }
@@ -170,7 +187,7 @@ export default function BoardPanel({ map, sel, onSelect, bad }) {
             <Stat
               label="Reveladas"
               glyph={
-                <span className="flex size-4 items-center justify-center rounded-[4px] bg-cell-open font-num text-[10px] font-bold text-accent">
+                <span className="flex size-4 items-center justify-center rounded-[4px] border border-cell-open-line bg-cell-open font-num text-[10px] font-bold text-accent">
                   X
                 </span>
               }

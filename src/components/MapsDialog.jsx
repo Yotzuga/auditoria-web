@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { Grid3x3, Plus, Trash2 } from 'lucide-react'
+import { ChevronLeft, CloudCheck, Download, Grid3x3, Plus, Trash2 } from 'lucide-react'
 import Modal, { CloseButton } from './Modal'
+import { useMedia } from '../lib/useMedia'
 import { mapStatus, stats } from '../lib/cells'
 
 const STATUS = {
@@ -86,8 +87,62 @@ function Row({ m, current, last, onOpen, onDelete }) {
   )
 }
 
-export default function MapsDialog({ maps, currentId, onOpen, onDelete, onNew, onClose }) {
+export default function MapsDialog({ maps, currentId, onOpen, onDelete, onNew, onClose, onExport }) {
   const sorted = [...maps].sort((a, b) => b.updatedAt - a.updatedAt)
+  const mobile = useMedia('(max-width: 767px)')
+  const list = sorted.map((m, i) => (
+    <Row key={m.id} m={m} current={m.id === currentId} last={i === sorted.length - 1} onOpen={onOpen} onDelete={onDelete} />
+  ))
+
+  // teléfono: página completa (diseño "Auditoría — Mis mapas")
+  if (mobile) {
+    return (
+      <Modal onClose={onClose} label="Mis mapas" full>
+        <div className="flex items-center justify-between">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Volver"
+            className="flex size-[34px] items-center justify-center rounded-full border border-line bg-surface"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <button
+            type="button"
+            onClick={onNew}
+            className="flex items-center gap-1.5 rounded-full border border-line bg-surface px-3.5 py-[9px] text-[13px] font-medium"
+          >
+            <Plus size={15} />
+            Nuevo mapa
+          </button>
+        </div>
+        <div className="flex flex-col gap-1">
+          <span className="font-num text-[11px] uppercase text-ink-3" style={{ letterSpacing: '1.2px' }}>
+            {maps.length} {maps.length === 1 ? 'mapa guardado' : 'mapas guardados'}
+          </span>
+          <h2 className="text-[28px] font-semibold" style={{ letterSpacing: '-0.6px' }}>
+            Mis mapas
+          </h2>
+        </div>
+        <div className="overflow-hidden rounded-2xl border border-line bg-surface">{list}</div>
+        {onExport && (
+          <button
+            type="button"
+            onClick={onExport}
+            className="flex h-11 items-center justify-center gap-2 rounded-xl border border-line bg-surface text-[13px] font-medium"
+          >
+            <Download size={15} />
+            Descargar mapas.json
+          </button>
+        )}
+        <div className="flex items-center justify-center gap-2 pb-2 pt-1">
+          <CloudCheck size={14} className="text-ink-3" />
+          <span className="text-xs text-ink-3">Los cambios se guardan solos en este dispositivo</span>
+        </div>
+      </Modal>
+    )
+  }
+
   return (
     <Modal onClose={onClose} label="Mis mapas" width={560}>
       <div className="flex items-center justify-between gap-3">
@@ -110,16 +165,7 @@ export default function MapsDialog({ maps, currentId, onOpen, onDelete, onNew, o
         </div>
       </div>
       <div className="max-h-[60vh] overflow-y-auto rounded-2xl border border-line bg-bg">
-        {sorted.map((m, i) => (
-          <Row
-            key={m.id}
-            m={m}
-            current={m.id === currentId}
-            last={i === sorted.length - 1}
-            onOpen={onOpen}
-            onDelete={onDelete}
-          />
-        ))}
+        {list}
       </div>
     </Modal>
   )

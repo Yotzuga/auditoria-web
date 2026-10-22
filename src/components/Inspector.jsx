@@ -1,5 +1,5 @@
 import { Eraser, Sparkles } from 'lucide-react'
-import CellGlyph, { cellBg } from './CellGlyph'
+import CellGlyph, { cellBg, LINE } from './CellGlyph'
 import { NUM_COLORS, describe } from '../lib/cells'
 import { REWARDS, REWARD_BY_ID } from '../lib/rewards'
 import Avisos from './Avisos'
@@ -26,7 +26,7 @@ function Opt({ sample, label, hotkey, active, bg = 'bg-cell-hidden', onClick, ti
       title={title}
       aria-pressed={active}
       className={`relative flex h-[62px] flex-1 flex-col items-center justify-center gap-1.5 rounded-xl border ${bg} ${
-        active ? 'border-accent' : 'border-line'
+        active ? 'border-accent' : LINE[bg]
       } hover:brightness-125`}
     >
       <span className="flex size-[22px] items-center justify-center">
@@ -51,7 +51,7 @@ function NumRow({ kind, cell, onPick, bg }) {
             title={kind === 'num' ? `Número revelado ${n} (tecla ${n})` : `Nº conocido ${n} (Num ${n})`}
             aria-pressed={active}
             className={`h-10 flex-1 rounded-[10px] border font-num text-[15px] font-bold hover:brightness-125 ${bg} ${
-              active ? 'border-accent' : 'border-line'
+              active ? 'border-accent' : LINE[bg]
             }`}
             style={{ color: NUM_COLORS[n] }}
           >
@@ -200,15 +200,15 @@ export default function Inspector({ sel, cell, rewardStats, onSet, onErase, avis
             onClick={() => onSet({ t: 'X', reward: cell?.t === 'X' ? cell.reward : undefined })}
             title="Mina revelada"
           />
-          <Opt sample={{ t: 'O' }} label="Posible mina" hotkey="O/R" active={t === 'O'} onClick={() => onSet({ t: 'O' })} />
+          <Opt sample={{ t: 'O' }} label="Posible mina" hotkey="O" active={t === 'O'} onClick={() => onSet({ t: 'O' })} />
         </div>
 
         {cell?.t === 'X' && <RewardPicker cell={cell} onPick={(id) => onSet({ t: 'X', reward: id })} />}
 
         <div className="flex gap-2">
-          <Opt sample={{ t: 'dash' }} label="Posible nº" hotkey="Q" active={t === 'dash'} onClick={() => onSet({ t: 'dash' })} title="Seguro; posible número / cero deducido" />
-          <Opt sample={{ t: 'hash' }} label="Nº seguro" hotkey="W" active={t === 'hash'} onClick={() => onSet({ t: 'hash' })} title="Seguro, número de valor desconocido" />
-          <Opt sample={{ t: 'red' }} label="Sin certeza" hotkey="E" active={t === 'red'} onClick={() => onSet({ t: 'red' })} title="Seguro, sin certeza de si es número" />
+          <Opt sample={{ t: 'hash' }} label="Nº seguro" hotkey="Q" active={t === 'hash'} onClick={() => onSet({ t: 'hash' })} title="Seguro, número de valor desconocido" />
+          <Opt sample={{ t: 'red' }} label="Sin certeza" hotkey="W" active={t === 'red'} onClick={() => onSet({ t: 'red' })} title="Seguro, sin certeza de si es número" />
+          <Opt sample={{ t: 'dash' }} label="Posible nº" hotkey="E" active={t === 'dash'} onClick={() => onSet({ t: 'dash' })} title="Seguro; posible número / cero deducido" />
           <Opt sample={{ t: 'zero' }} label="Cero" hotkey="0" bg="bg-cell-open" active={t === 'zero'} onClick={() => onSet({ t: 'zero' })} title="Cero revelado" />
         </div>
 
