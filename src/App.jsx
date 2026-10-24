@@ -29,6 +29,8 @@ export default function App() {
   const [mode, setMode] = useState('auditoria') // escritorio: 'auditoria' (editar) | 'modelo' (panel del motor local)
   const [overlay, setOverlay] = useState(null) // lo que el panel Modelo resalta en el tablero
   const modelo = mode === 'modelo' && !mobile
+  // ⇧X en modo Modelo abre la tarjeta flotante de recompensa sobre la casilla; guarda cuál casilla (r, c)
+  const [picker, setPicker] = useState(null)
 
   // mantener la selección dentro del tablero al cambiar de mapa
   const safeSel = { r: Math.min(sel.r, map.rows - 1), c: Math.min(sel.c, map.cols - 1) }
@@ -51,6 +53,17 @@ export default function App() {
       setDialog(cloud.status === 'off' ? 'file' : 'cloud')
     } else flush()
   }, [file.status, cloud.status, reconnect, flush])
+
+  // la tarjeta se cierra al cambiar de casilla, de mapa o de modo
+  useEffect(() => setPicker(null), [safeSel.r, safeSel.c, map.id, mode])
+  const closePicker = useCallback(() => setPicker(null), [])
+  const pickReward = useCallback(
+    (id) => {
+      set({ t: 'X', reward: id })
+      setPicker(null)
+    },
+    [set],
+  )
 
   // deshacer / rehacer: la selección salta a la casilla que cambió, para ver qué se movió
   const doUndo = useCallback(() => {
@@ -99,6 +112,11 @@ export default function App() {
       }
       if (mod || e.altKey) return
 
+      if (e.key === 'Escape' && picker) {
+        e.preventDefault()
+        return setPicker(null)
+      }
+
       // Num 1–8 (teclado numérico) → número conocido. Va antes que las flechas porque con
       // Bloq Num apagado esas teclas envían ArrowUp, PageDown, etc.
       const pad = NUMPAD.exec(e.code)
@@ -134,6 +152,7 @@ export default function App() {
         if (cell?.t === 'X' && !e.shiftKey && n >= 1 && n <= 5) {
           const ids = ['plinko', 'mines', 'gachas', 'cartas', 'variado']
           e.preventDefault()
+          setPicker(null)
           return set({ t: 'X', reward: ids[n - 1] })
         }
         e.preventDefault()
@@ -143,6 +162,7 @@ export default function App() {
 
       if (e.code === 'KeyX') {
         e.preventDefault()
+        if (e.shiftKey && modelo) setPicker({ r, c })
         return set(e.shiftKey ? { t: 'X', reward: cell?.t === 'X' ? cell.reward : undefined } : { t: 'x' })
       }
       if (e.code === 'KeyO' || e.code === 'KeyR') return e.preventDefault(), set({ t: 'O' })
@@ -152,7 +172,7 @@ export default function App() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [dialog, safeSel, cell, map.rows, map.cols, set, fileAction, doUndo, doRedo])
+  }, [dialog, safeSel, cell, map.rows, map.cols, set, fileAction, doUndo, doRedo, modelo, picker])
 
   const defaults = {
     name: nextMapName(state.maps),
@@ -208,7 +228,7 @@ export default function App() {
           onNew={() => setDialog('new')}
         />
         <div className="flex min-h-0 flex-1 max-lg:flex-col max-lg:overflow-y-auto">
-          <BoardPanel map={map} sel={safeSel} onSelect={setSel} bad={rev.cells} history={{ canUndo, canRedo, onUndo: doUndo, onRedo: doRedo }} overlay={modelo ? overlay : null} fitKey={modelo ? 'm' : 'a'} />
+          <BoardPanel map={map} sel={safeSel} onSelect={setSel} bad={rev.cells} history={{ canUndo, canRedo, onUndo: doUndo, onRedo: doRedo }} picker={modelo && picker && cell?.t === 'X' ? { cell, onPick: pickReward, onClose: closePicker } : null} overlay={modelo ? overlay : null} fitKey={modelo ? 'm' : 'a'} />
           {!mobile && <ModeloPanel map={map} active={modelo} onGo={setSel} onOverlay={setOverlay} />}
           {!modelo && (
           <Inspector

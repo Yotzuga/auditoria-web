@@ -1,6 +1,7 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Maximize, Minus, Plus, Redo2, Undo2 } from 'lucide-react'
 import CellGlyph, { cellBg, cellLine } from './CellGlyph'
+import RewardFloat from './RewardFloat'
 import { stats } from '../lib/cells'
 
 const BASE = 30
@@ -64,7 +65,7 @@ function Stat({ label, glyph, value, suffix }) {
   )
 }
 
-export default function BoardPanel({ map, sel, onSelect, bad, overlay, fitKey, history }) {
+export default function BoardPanel({ map, sel, onSelect, bad, overlay, fitKey, history, picker }) {
   const { x, X, total } = useMemo(() => stats(map), [map])
   const [zoom, setZoom] = useState(100)
   const zoneRef = useRef(null)
@@ -268,6 +269,20 @@ export default function BoardPanel({ map, sel, onSelect, bad, overlay, fitKey, h
               {n}
             </span>
           ))}
+          {picker && (
+            <RewardFloat
+              cell={picker.cell}
+              r={sel.r}
+              c={sel.c}
+              cx={selX}
+              top={PAD + sel.r * (size + GAP)}
+              bottom={PAD + sel.r * (size + GAP) + size}
+              boardW={boardW + 2}
+              zoneRef={zoneRef}
+              onPick={picker.onPick}
+              onClose={picker.onClose}
+            />
+          )}
         </div>
       </div>
     </div>
