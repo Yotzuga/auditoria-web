@@ -6,13 +6,17 @@ export default function Avisos({ items, sel, onGo, onFix, onAll }) {
   if (!items.length) return null
   const shown = items.slice(0, 2)
   const more = items.length - shown.length
+  const soloSuaves = shown.every((i) => i.soft)
   return (
-    <div role="alert" className="flex flex-col gap-2 rounded-xl border border-danger/40 bg-danger/10 p-2.5">
+    <div
+      role="alert"
+      className={`flex flex-col gap-2 rounded-xl border p-2.5 ${soloSuaves ? 'border-accent-mid bg-accent-soft' : 'border-danger/40 bg-danger/10'}`}
+    >
       {shown.map((it) => {
         const here = it.r === sel.r && it.c === sel.c
         return (
           <div key={it.id} className="flex items-start gap-2">
-            <AlertTriangle size={14} className="mt-[1px] shrink-0 text-danger" />
+            <AlertTriangle size={14} className={`mt-[1px] shrink-0 ${it.soft ? 'text-accent' : 'text-danger'}`} />
             <div className="flex min-w-0 flex-1 flex-col gap-0.5">
               <span className="text-xs font-semibold leading-snug">
                 {it.title}

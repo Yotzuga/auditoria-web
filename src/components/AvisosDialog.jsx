@@ -3,7 +3,8 @@ import Modal, { CloseButton } from './Modal'
 import { nombre } from '../lib/reglas'
 
 export default function AvisosDialog({ rev, onGo, onFix, onClose }) {
-  const { issues } = rev
+  const { issues, count } = rev
+  const suaves = issues.length - count
   return (
     <Modal onClose={onClose} label="Revisión del tablero" width={520}>
       <div className="flex items-start justify-between gap-3">
@@ -11,7 +12,7 @@ export default function AvisosDialog({ rev, onGo, onFix, onClose }) {
           <h2 className="text-xl font-semibold tracking-[-0.02em]">Revisión del tablero</h2>
           <p className="text-[13px] text-ink-2">
             {issues.length
-              ? `${issues.length} ${issues.length === 1 ? 'aviso' : 'avisos'}. Son las mismas reglas de issues.py; solo avisan, no bloquean nada.`
+              ? `${count} ${count === 1 ? 'aviso' : 'avisos'}${suaves ? ` y ${suaves} ${suaves === 1 ? 'sugerencia' : 'sugerencias'}` : ''}. Son las reglas de issues.py; solo avisan, no bloquean nada.`
               : 'Todo coherente con las reglas.'}
           </p>
         </div>
@@ -26,7 +27,7 @@ export default function AvisosDialog({ rev, onGo, onFix, onClose }) {
         <div className="flex max-h-[55dvh] flex-col gap-2 overflow-y-auto">
           {issues.map((it) => (
             <div key={it.id} className="flex items-start gap-2.5 rounded-xl border border-line bg-surface-2 p-3">
-              <AlertTriangle size={15} className="mt-0.5 shrink-0 text-danger" />
+              <AlertTriangle size={15} className={`mt-0.5 shrink-0 ${it.soft ? 'text-accent' : 'text-danger'}`} />
               <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <span className="text-[13px] font-semibold leading-snug">{it.title}</span>
                 {it.r != null && <span className="font-num text-[11px] text-ink-3">{nombre(it.r, it.c)}</span>}

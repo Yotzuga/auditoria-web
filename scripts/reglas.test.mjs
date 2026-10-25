@@ -36,6 +36,34 @@ assert.deepEqual(reglas(mapa(['w .', '. .'])), []) // con vecinos sin explorar e
 // CERO-MINA: cero revelado ("0") o deducido ("q") con mina al lado
 assert.deepEqual(reglas(mapa(['x 0'], 1)), ['CERO-MINA@0,1'])
 assert.deepEqual(reglas(mapa(['X q'], 1)), ['CERO-MINA@0,1'])
+// O-EN-COMPLETO: una posible mina (r) junto a un número que ya tiene todas sus minas
+assert.deepEqual(reglas(mapa(['x 1 r .', '. . . .', '. . . .'], 3)), ['O-EN-COMPLETO@0,2'])
+const oc = revisar(mapa(['x 1 r .', '. . . .', '. . . .'], 3)).issues[0]
+assert.match(oc.detail, /Fila 1 · Columna 2 marca 1/)
+assert.equal(oc.fix, undefined)
+assert.deepEqual(reglas(mapa(['Xv 2 r .', 'Xg . . .', '. . . .'], 3)), ['O-EN-COMPLETO@0,2']) // minas reveladas con recompensa
+assert.deepEqual(reglas(mapa(['x 2 r .', '. . . .', '. . . .'], 3)), []) // pista incompleta: la r puede ser mina
+assert.deepEqual(reglas(mapa(['x 1 . .', '. . . r', '. . . .'], 3)), []) // r lejos de la pista
+assert.deepEqual(reglas(mapa(['x k1 r .', '. . . .', '. . . .'], 3)), ['O-EN-COMPLETO@0,2']) // número conocido (k)
+assert.deepEqual(reglas(mapa(['x 1 x .', '. . . .', '. . . .'], 3)), ['EXCESO@0,1']) // exceso: sigue siendo EXCESO
+assert.deepEqual(reglas(mapa(['x 1 r 1', '. . . x', '. . . .'], 3)), ['O-EN-COMPLETO@0,2']) // junto a dos pistas completas: un solo aviso
+// O-EN-CERO: una posible mina (r) junto a un cero (0 revelado o q deducido); manda sobre O-EN-COMPLETO
+assert.deepEqual(reglas(mapa(['0 r . .', '. . . .', '. . . .'], 3)), ['O-EN-CERO@0,1'])
+assert.deepEqual(reglas(mapa(['q r . .', '. . . .', '. . . .'], 3)), ['O-EN-CERO@0,1'])
+assert.deepEqual(reglas(mapa(['x 1 r 0', '. . . .', '. . . .'], 3)), ['O-EN-CERO@0,2'])
+assert.deepEqual(reglas(mapa(['0 . . r', '. . . .', '. . . .'], 3)), []) // lejos del cero
+assert.match(revisar(mapa(['0 r . .', '. . . .', '. . . .'], 3)).issues[0].detail, /Fila 1 · Columna 1 es un cero/)
+// MINAS-FALTAN: aviso suave (no cuenta ni pinta la casilla). 'w' = relleno resuelto que no es pista ni mina
+const mf5 = revisar(mapa(['1 . w', 'w w w'], 3)) // el 1 solo tiene una casilla posible: es mina
+assert.deepEqual(mf5.issues.map((i) => `${i.rule}@${i.r},${i.c}`), ['MINAS-FALTAN@0,0'])
+assert.equal(mf5.issues[0].soft, true)
+assert.equal(mf5.count, 0)
+assert.equal(mf5.cells.size, 0)
+assert.deepEqual(reglas(mapa(['. 1 .', 'w w w'], 3)), []) // dos posibles para una mina: no se puede decidir
+assert.deepEqual(reglas(mapa(['1 r w', 'w w w'], 3)), []) // ya está marcada como r: nada que avisar
+assert.deepEqual(reglas(mapa(['. 2 r', 'w w w'], 3)), ['MINAS-FALTAN@0,1']) // una vacía y una r: falta marcar la vacía
+assert.deepEqual(reglas(mapa(['x 2 . w', 'w w w w'], 3)), ['MINAS-FALTAN@0,1']) // cuenta las minas ya marcadas
+assert.deepEqual(reglas(mapa(['x 1 . w', 'w w w w'], 3)), []) // ya tiene todas sus minas (completo): nada que marcar
 // TOTAL: más minas marcadas que el total (x + X)
 const total = revisar(mapa(['x X x'], 2))
 assert.deepEqual(total.issues.map((i) => i.rule), ['TOTAL'])

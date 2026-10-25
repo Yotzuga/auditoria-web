@@ -8,6 +8,7 @@
 //  PROMO     "–" rojo junto a una mina confirmada: debería ser "#" (corregible con un toque)
 //  ANOM#     "#" con los 8 vecinos resueltos y sin ninguna mina
 //  CERO-MINA cero (revelado o deducido) con una mina confirmada alrededor
+//  O-EN-COMPLETO  posible mina (O) junto a un número (o k) que ya tiene todas sus minas marcadas: no puede ser mina
 //  TOTAL     más minas marcadas (x + X) que el total del mapa
 
 const K = (r, c) => `${r},${c}`
@@ -56,6 +57,7 @@ export function revisar(map) {
   }
 
   const issues = []
+  const completos = new Map() // pistas (número o k) con todas sus minas marcadas: "r,c" → { r, c, v }
   const add = (rule, r, c, title, detail, fix) =>
     issues.push({ id: `${rule}:${r},${c}`, rule, r, c, title, detail, fix })
 
@@ -81,6 +83,7 @@ export function revisar(map) {
         const v = cell.v
         const lbl = k === 'Hk' ? `Nº conocido ${v}` : `Nº ${v}`
         const rule = k === 'Hk' ? '-k' : ''
+        if (m === v) completos.set(K(r, c), { r, c, v })
         if (m > v) {
           add(
             'EXCESO' + rule, r, c, `${lbl}: demasiadas minas`,
@@ -105,6 +108,24 @@ export function revisar(map) {
       }
       if ((k === 'Z' || k === 'W') && m > 0) {
         add('CERO-MINA', r, c, 'Cero con mina alrededor', `Un cero no puede tener minas a su lado y tiene ${m}.`)
+      }
+    }
+  }
+  // una posible mina (O) no puede tocar una pista completa: se avisa en la O, que es la que hay que corregir
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (cells[K(r, c)]?.t !== 'O') continue
+      let pista = null
+      for (let dr = -1; dr <= 1 && !pista; dr++) {
+        for (let dc = -1; dc <= 1 && !pista; dc++) {
+          if (dr || dc) pista = completos.get(K(r + dr, c + dc)) || null
+        }
+      }
+      if (pista) {
+        add(
+          'O-EN-COMPLETO', r, c, 'Posible mina junto a un número completo',
+          `${nombre(pista.r, pista.c)} marca ${pista.v} y ya tiene todas sus minas (x o X): esta casilla no puede ser mina.`,
+        )
       }
     }
   }
