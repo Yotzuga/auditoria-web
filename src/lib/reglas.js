@@ -8,7 +8,11 @@
 //  PROMO     "–" rojo junto a una mina confirmada: debería ser "#" (corregible con un toque)
 //  ANOM#     "#" con los 8 vecinos resueltos y sin ninguna mina
 //  CERO-MINA cero (revelado o deducido) con una mina confirmada alrededor
+//  O-EN-CERO posible mina (O) junto a un cero (revelado o deducido): un cero no tiene minas alrededor
 //  O-EN-COMPLETO  posible mina (O) junto a un número (o k) que ya tiene todas sus minas marcadas: no puede ser mina
+//  MINAS-FALTAN  (solo aquí, aviso suave: no cuenta en el contador ni marca la casilla) un número cuyas minas restantes
+//                son tantas como casillas posibles que le quedan: todas son mina y falta marcarlas. En el motor
+//                local equivale a «MINAS SEGURAS aún sin marcar» de la pantalla Revisar.
 //  TOTAL     más minas marcadas (x + X) que el total del mapa
 
 const K = (r, c) => `${r},${c}`
@@ -39,6 +43,19 @@ function clase(cell) {
   }
 }
 
+/** ¿Alguna de las casillas posibles alrededor está vacía (no marcada como "r")? */
+function sinMarcar(cls, cells, r, c, rows, cols) {
+  for (let dr = -1; dr <= 1; dr++) {
+    for (let dc = -1; dc <= 1; dc++) {
+      const rr = r + dr
+      const cc = c + dc
+      if ((!dr && !dc) || rr < 0 || cc < 0 || rr >= rows || cc >= cols) continue
+      if (cls[rr][cc] === 'P' && cells[K(rr, cc)]?.t !== 'O') return true
+    }
+  }
+  return false
+}
+
 export const nombre = (r, c) => `Fila ${r + 1} · Columna ${c + 1}`
 
 /** Revisa un mapa. → { issues, cells (Set "r,c"), count } */
@@ -58,8 +75,8 @@ export function revisar(map) {
 
   const issues = []
   const completos = new Map() // pistas (número o k) con todas sus minas marcadas: "r,c" → { r, c, v }
-  const add = (rule, r, c, title, detail, fix) =>
-    issues.push({ id: `${rule}:${r},${c}`, rule, r, c, title, detail, fix })
+  const add = (rule, r, c, title, detail, fix, soft) =>
+    issues.push({ id: `${rule}:${r},${c}`, rule, r, c, title, detail, fix, ...(soft ? { soft: true } : null) })
 
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
@@ -84,6 +101,14 @@ export function revisar(map) {
         const lbl = k === 'Hk' ? `Nº conocido ${v}` : `Nº ${v}`
         const rule = k === 'Hk' ? '-k' : ''
         if (m === v) completos.set(K(r, c), { r, c, v })
+        // faltan tantas minas como casillas posibles: todas lo son. Si ya están todas como "r" no hay nada que avisar.
+        if (pot > 0 && m < v && m + pot === v && sinMarcar(cls, cells, r, c, rows, cols)) {
+          add(
+            'MINAS-FALTAN', r, c, `${lbl}: faltan minas por marcar`,
+            `Necesita ${v - m} más y tiene exactamente ${pot} casilla${pot === 1 ? '' : 's'} posible${pot === 1 ? '' : 's'}: todas son mina.`,
+            undefined, true,
+          )
+        }
         if (m > v) {
           add(
             'EXCESO' + rule, r, c, `${lbl}: demasiadas minas`,
@@ -111,11 +136,26 @@ export function revisar(map) {
       }
     }
   }
-  // una posible mina (O) no puede tocar una pista completa: se avisa en la O, que es la que hay que corregir
+  // una posible mina (O) no puede tocar un cero ni una pista completa: se avisa en la O, que es la que hay que corregir
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       if (cells[K(r, c)]?.t !== 'O') continue
+      let cero = null
       let pista = null
+      for (let dr = -1; dr <= 1 && !cero; dr++) {
+        for (let dc = -1; dc <= 1 && !cero; dc++) {
+          const rr = r + dr
+          const cc = c + dc
+          if ((dr || dc) && rr >= 0 && cc >= 0 && rr < rows && cc < cols && (cls[rr][cc] === 'Z' || cls[rr][cc] === 'W')) cero = { r: rr, c: cc }
+        }
+      }
+      if (cero) {
+        add(
+          'O-EN-CERO', r, c, 'Posible mina junto a un cero',
+          `${nombre(cero.r, cero.c)} es un cero: no tiene minas alrededor, así que esta casilla no puede ser mina.`,
+        )
+        continue
+      }
       for (let dr = -1; dr <= 1 && !pista; dr++) {
         for (let dc = -1; dc <= 1 && !pista; dc++) {
           if (dr || dc) pista = completos.get(K(r + dr, c + dc)) || null
@@ -135,7 +175,9 @@ export function revisar(map) {
       detail: `Hay ${found} minas marcadas (x + X) y el mapa solo tiene ${map.mines}.`,
     })
   }
-  return { issues, cells: new Set(issues.filter((i) => i.r != null).map((i) => K(i.r, i.c))), count: issues.length }
+  // los avisos suaves se muestran junto a la casilla elegida, pero no inflan el contador ni pintan la casilla
+  const duros = issues.filter((i) => !i.soft)
+  return { issues, cells: new Set(duros.filter((i) => i.r != null).map((i) => K(i.r, i.c))), count: duros.length }
 }
 
 /** Avisos que tocan la casilla seleccionada: los suyos y los de las pistas de sus 8 vecinos. */
