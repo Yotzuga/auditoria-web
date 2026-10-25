@@ -146,12 +146,15 @@ function Importar({ total, onImport }) {
 
 /**
  * Tarjeta «Modelo de pago». `modelo` = objeto del motor (a, b, ruido, error_loo, s_min, s_max, disparos_usados, disparos…).
+ * `scope`: «general» = la fila de totales (registrados, promedio, neto…) cuenta los disparos de todos los mapas;
+ * «mapa» = solo los de este mapa (`disparos`). Todo lo demás es igual en ambas.
  */
-export default function Pago({ modelo, calibracion, motor, actualizado, onImport, defaultOpen = false }) {
+export default function Pago({ modelo, calibracion, motor, actualizado, onImport, defaultOpen = false, scope = 'general', disparos, mapaNombre }) {
   const [open, setOpen] = useState(defaultOpen)
   const [tec, setTec] = useState(false)
   if (!modelo) return null
-  const dis = modelo.disparos || {}
+  const esMapa = scope === 'mapa'
+  const dis = (esMapa ? disparos : modelo.disparos) || {}
   const err = modelo.error_loo ?? modelo.ruido
   return (
     <div className={`${card} overflow-hidden`}>
@@ -200,12 +203,15 @@ export default function Pago({ modelo, calibracion, motor, actualizado, onImport
             </div>
           </div>
 
+          <div className="flex flex-col gap-1.5">
+          <span className="text-[11px] text-ink-3">{esMapa ? `Disparos de este mapa${mapaNombre ? ` (${mapaNombre})` : ''}` : 'Disparos de todos los mapas'}</span>
           <div className="grid grid-cols-5 gap-2 rounded-xl bg-surface-2 px-3.5 py-3">
             <Stat v={dis.total ?? '—'} label="Registrados" />
             <Stat v={dis.usables ?? '—'} label="Usables" />
             <Stat v={dis.promedio_sp != null ? `${f1(dis.promedio_sp)} SP` : '—'} label="Promedio" />
             <Stat v={dis.minimo_sp != null ? `${f1(dis.minimo_sp)} SP` : '—'} label="Mínimo" />
             <Stat v={dis.neto_sp != null ? `${sg(dis.neto_sp, 0)} SP` : '—'} label="Neto" tone={dis.neto_sp >= 0 ? 'text-success' : 'text-danger'} />
+          </div>
           </div>
 
           <PlanVsReal cal={calibracion} ruido={modelo.ruido} />
@@ -235,7 +241,7 @@ export default function Pago({ modelo, calibracion, motor, actualizado, onImport
                 ))}
               </div>
             )}
-            <Importar total={dis.total} onImport={onImport} />
+            <Importar total={modelo.disparos?.total} onImport={onImport} />
           </div>
         </div>
       )}

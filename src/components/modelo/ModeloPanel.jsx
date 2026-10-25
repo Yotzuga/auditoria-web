@@ -69,10 +69,12 @@ export default function ModeloPanel({ map, active = true, onGo, onOverlay }) {
   }
 
   const modeloObj = lastRetro || lastRank?.modelo
+  const retro = lastRetro?.retroalimentacion
+  // el neto y demás totales: «general» (Ranking, Registrar) cuenta todos los mapas; «mapa» (Plan) solo este
   const pago = (
     <Pago
       modelo={modeloObj}
-      calibracion={lastRetro?.retroalimentacion?.calibracion}
+      calibracion={retro?.calibracion}
       motor={lastRank?.motor}
       actualizado={rev?.analizado ? hhmm(rev.analizado) : null}
       onImport={async (filas) => {
@@ -80,6 +82,17 @@ export default function ModeloPanel({ map, active = true, onGo, onOverlay }) {
         if (d && d.ok !== false) m.doRetro()
         return d
       }}
+    />
+  )
+  const pagoMapa = (
+    <Pago
+      scope="mapa"
+      modelo={modeloObj}
+      calibracion={retro?.calibracion}
+      disparos={retro?.disparos_mapa}
+      mapaNombre={map.name}
+      motor={lastRank?.motor}
+      actualizado={rev?.analizado ? hhmm(rev.analizado) : null}
     />
   )
 
@@ -175,7 +188,7 @@ export default function ModeloPanel({ map, active = true, onGo, onOverlay }) {
                 focus={focus}
                 onFocus={onFocus}
                 onTab={setTab}
-                pagoSlot={pago}
+                pagoSlot={pagoMapa}
               />
             )}
             {tab === 'Ranking' && <Ranking rank={lastRank} focus={focus} onFocus={onFocus} onTab={setTab} pagoSlot={pago} modelo={modeloObj} />}
